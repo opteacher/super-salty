@@ -1,0 +1,52 @@
+{
+  "name": "super-salty-back",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "type": "module",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "lint": "tsc --noEmit && eslint \"**/*.{js,ts}\" --quiet --fix",
+    "start:dev": "tsc && cd dist && cross-env ENV=dev node app.js",
+    "start:prod": "tsc && cd dist && cross-env ENV=prod node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.18.0",
+    "jsonwebtoken": "^8.5.1",
+    "koa": "^2.13.1",
+    "koa-body": "^4.2.0",
+    "koa-json": "^2.0.2",
+    "koa-logger": "^3.2.1",
+    "koa-router": "^10.0.0",
+    "koa-static": "^5.0.0",
+    "koa2-cors": "^2.0.6",
+    "lodash": "^4.17.21",
+    "mongoose": "^5.12.11",
+    "mysql2": "^2.2.5",
+    "qiniu": "^7.3.3",
+    "sequelize": "^4.38.0",
+    "toml": "^3.0.0",
+    "uuid": "^8.3.2"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^8.5.5",
+    "@types/koa": "^2.13.4",
+    "@types/koa-json": "^2.0.20",
+    "@types/koa-logger": "^3.1.1",
+    "@types/koa-router": "^7.4.4",
+    "@types/koa-static": "^4.0.2",
+    "@types/koa2-cors": "^2.0.2",
+    "@types/sequelize": "^4.28.10",
+    "@types/uuid": "^8.3.1",
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.7.0",
+    "cross-env": "^7.0.3",
+    "eslint": "^7.32.0",
+    "typescript": "^4.4.2"
+  }
+}

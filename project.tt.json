@@ -1,0 +1,9 @@
+{
+  "miniprogramRoot": "./",
+  "projectname": "super-salty",
+  "appid": "touristappid",
+  "setting": {
+    "es6": false,
+    "minified": false
+  }
+}

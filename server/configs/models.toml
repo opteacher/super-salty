@@ -1,0 +1,4 @@
+version=1
+prefix="super-salty"
+type="mongo"
+sync=true

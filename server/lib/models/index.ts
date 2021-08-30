@@ -1,0 +1,171 @@
+import _ from 'lodash'
+import Router from 'koa-router'
+import Path from 'path'
+import * as utils from '../utils/index.js'
+import { DB, MdlInf } from '../databases/index.js'
+
+const router = new Router()
+
+interface ModelConfig {
+  version: number
+  prefix: string
+  type: string
+  sync: boolean | string[]
+  inits?: Map<string, string>
+}
+
+interface ModelMapper {
+  [mdlName: string]: MdlInf
+}
+
+export interface ModelExports {
+  router: Router
+  models: ModelMapper
+  db: DB
+}
+
+export default async function (mdlsPath: string, dbCfgPath: string, mdlCfgPath: string): Promise<ModelExports> {
+  const cfg: ModelConfig = utils.readConfig(mdlCfgPath)
+  const ImplDb = (await import(`../databases/${cfg.type}.js`)).default
+  const db: DB = new ImplDb(dbCfgPath)
+
+  // @block{modelRoutes}:模型生成路由
+  // @includes:lodash
+  // @includes:koa-router
+  // @includes:../db/数据库类型
+  // @includes:../config/model.json
+
+  // @steps{1}:引进所有模型
+  const models: ModelMapper = {}
+  for (const mfile of utils.scanPath(mdlsPath, { ignores: ['index.js'] })) {
+    const minfo: MdlInf = (await import(Path.resolve(mdlsPath, mfile))).default
+    models[minfo.name] = minfo
+  }
+
+  // @step{}:同步数据库
+  const syncFunc = async () => {
+    if (cfg.sync && Array.isArray(cfg.sync)) {
+      await Promise.all(cfg.sync.map((tname: string) => db.sync(models[tname].model)))
+      console.log('数据库模型同步完毕')
+    } else if (cfg.sync) {
+      await Promise.all(_.values(models).map(minfo => db.sync(minfo.model)))
+      console.log('数据库模型同步完毕')
+    }
+    if (cfg.inits) {
+      for (const [mname, initFile] of cfg.inits) {
+        const numIpt = await db.dump(models[mname].model, Path.resolve(initFile))
+        console.log(`从${initFile}文件内读取并导入了${numIpt}条记录到表${mname}中`)
+      }
+    }
+  }
+  syncFunc()
+
+  // @steps{2}:根据模型之间的关系，生成前置路径
+  db.genPreRoutes()
+
+  // @steps{3}:遍历所有模型
+  console.log('模型生成的路由：')
+  router.get(`/${cfg.prefix}/mdl/v${cfg.version}/model`, async ctx => {
+    ctx.body = { version: cfg.version }
+  })
+  console.log(`GET\t/${cfg.prefix}/mdl/v${cfg.version}/model`)
+  for (const [mname, minfo] of Object.entries(models)) {
+    // @steps{3_2}:定义所有用到的URL
+    const GetUrl = `/${cfg.prefix}/mdl/v${cfg.version}/${mname}/:id`
+    const AllUrl = `/${cfg.prefix}/mdl/v${cfg.version}/${mname}s`
+    const PostUrl = `/${cfg.prefix}/mdl/v${cfg.version}/${mname}`
+    const PutUrl = GetUrl
+    const DelUrl = GetUrl
+    const prePath = minfo.options.router.prePath
+    const LnkUrl = prePath ? `/${cfg.prefix}/mdl/v${cfg.version}/${prePath.map(pp => pp[1]).join('/')}/${mname}/:id` : null
+
+    // @steps{3_3}:遍历用户要求的method接口
+    for (const method of minfo.options.router.methods) {
+      // @steps{3_3_2}:根据method跳转到相应的处理逻辑中
+      switch (method.toLowerCase()) {
+        case 'get':
+          // @steps{3_3_2_1}:*GET*：根据id查找，**会联表**
+          router.get(GetUrl, async ctx => {
+            ctx.body = {
+              data: await db.select(minfo.model, {
+                id: ctx.params.id
+              }, { ext: true })
+            }
+          })
+          console.log(`GET\t${GetUrl}`)
+          break
+        case 'all':
+          // @steps{3_3_2_2}:*ALL*：查所有，**不会联表**
+          router.get(AllUrl, async ctx => {
+            ctx.body = {
+              data: await db.select(minfo.model, ctx.query)
+            }
+          })
+          console.log(`GET\t${AllUrl}`)
+          break
+        case 'post':
+          // @steps{3_3_2_3}:*POST*：**使用form表单提交**
+          router.post(PostUrl, async ctx => {
+            ctx.body = {
+              data: await db.save(minfo.model, ctx.request.body)
+            }
+          })
+          console.log(`POST\t${PostUrl}`)
+          break
+        case 'put':
+          // @steps{3_3_2_4}:*PUT*：同POST
+          router.put(PutUrl, async ctx => {
+            ctx.body = {
+              data: await db.save(minfo.model, ctx.request.body, {
+                id: ctx.params.id
+              })
+            }
+          })
+          console.log(`PUT\t${PutUrl}`)
+          break
+        case 'delete':
+          // @steps{3_3_2_5}:*DELETE*：同GET
+          router.delete(DelUrl, async ctx => {
+            ctx.body = {
+              data: await db.delete(minfo.model, {
+                id: ctx.params.id
+              })
+            }
+          })
+          console.log(`DELETE\t${DelUrl}`)
+          break
+        case 'link':
+          // @steps{3_3_2_6}:*LINK*：将对象关联到指定目标对象中（**对象已经被创建**）
+          //             ```
+          //             /mdl/vx/target/:tid/source/:sid
+          //             // 意味着source[sid]关联到target[tid]
+          //             ```
+          if (!LnkUrl || !prePath) {
+            break
+          }
+          router.put(LnkUrl, async ctx => {
+            const lstPre = prePath[prePath.length - 1]
+            const prop = lstPre[0]
+            const path = lstPre[1]
+            const ary = path.split('/')
+            if (ary.length !== 2) {
+              ctx.body = '错误的路由前缀'
+              return
+            }
+            const colNam = ary[0]
+            const pamId = ary[1].slice(1)
+            const preMdl = models[colNam].model
+            const condition = { id: ctx.params[pamId] }
+            ctx.body = {
+              data: await db.save(preMdl, { [prop]: ctx.params.id }, condition, {
+                updMode: 'append'
+              })
+            }
+          })
+          console.log(`LINK\t${LnkUrl}`)
+          break
+      }
+    }
+  }
+  return Promise.resolve({ router, models, db })
+}
