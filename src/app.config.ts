@@ -6,7 +6,10 @@ export default {
     'pages/message/message',
     'pages/my/my',
     'pages/goodDtl/goodDtl',
+    'pages/chatRoom/chatRoom',
     'pages/addGood/addGood',
+    'pages/addGoodScs/addGoodScs',
+    'pages/addNews/addNews',
   ],
   window: {
     backgroundTextStyle: 'light',

@@ -16,6 +16,7 @@ import {
   AtForm,
   AtTextarea,
   AtImagePicker,
+  AtAccordion,
   AtTag,
   AtSearchBar,
   AtFab,
@@ -25,7 +26,10 @@ import {
   AtVirtualScroll,
   AtButton,
   AtInput,
-  AtMessage
+  AtInputNumber,
+  AtBadge,
+  AtMessage,
+  AtSkeleton
 } from 'taro-ui-vue3/lib'
 import 'taro-ui-vue3/dist/style/components/modal.scss'
 import 'taro-ui-vue3/dist/style/components/activity-indicator.scss'
@@ -37,6 +41,7 @@ import 'taro-ui-vue3/dist/style/components/grid.scss'
 import 'taro-ui-vue3/dist/style/components/form.scss'
 import 'taro-ui-vue3/dist/style/components/textarea.scss'
 import 'taro-ui-vue3/dist/style/components/image-picker.scss'
+import 'taro-ui-vue3/dist/style/components/accordion.scss'
 import 'taro-ui-vue3/dist/style/components/tag.scss'
 import 'taro-ui-vue3/dist/style/components/search-bar.scss'
 import 'taro-ui-vue3/dist/style/components/fab.scss'
@@ -45,9 +50,12 @@ import 'taro-ui-vue3/dist/style/components/card.scss'
 import 'taro-ui-vue3/dist/style/components/virtual-scroll.scss'
 import 'taro-ui-vue3/dist/style/components/button.scss'
 import 'taro-ui-vue3/dist/style/components/input.scss'
+import 'taro-ui-vue3/dist/style/components/input-number.scss'
+import 'taro-ui-vue3/dist/style/components/badge.scss'
 import 'taro-ui-vue3/dist/style/components/tabs.scss'
 import 'taro-ui-vue3/dist/style/components/article.scss'
 import 'taro-ui-vue3/dist/style/components/message.scss'
+import 'taro-ui-vue3/dist/style/components/skeleton.scss'
 import './app.scss'
 
 const App = createApp({
@@ -65,6 +73,8 @@ App.use(createUI({
   AtFlex,
   AtButton,
   AtInput,
+  AtInputNumber,
+  AtBadge,
   AtFlexItem,
   AtIcon,
   AtDivider,
@@ -73,6 +83,7 @@ App.use(createUI({
   AtForm,
   AtTextarea,
   AtImagePicker,
+  AtAccordion,
   AtTag,
   AtSearchBar,
   AtFab,
@@ -80,7 +91,8 @@ App.use(createUI({
   AtAvatar,
   AtCard,
   AtVirtualScroll,
-  AtMessage
+  AtMessage,
+  AtSkeleton
 }))
 
 export default App

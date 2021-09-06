@@ -39,6 +39,7 @@
     "@tarojs/components": "3.3.3",
     "@tarojs/runtime": "3.3.3",
     "@tarojs/taro": "3.3.3",
+    "lodash": "^4.17.21",
     "taro-ui": "^3.0.0-alpha.10",
     "taro-ui-vue3": "^1.0.0-alpha.21",
     "vue": "^3.0.7",

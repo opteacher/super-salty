@@ -1,18 +1,26 @@
 <template>
   <canvas id="cvsVerfCode" type="2d" :style="{
-    width: width + 'px', height: height + 'px'
+    width: width + 'px', height: height + 'px', 'z-index': 1
   }" @tap="onClicked"/>
 </template>
 
 <script lang="ts">
 import { defineComponent, reactive, onMounted } from 'vue'
+import Taro from '@tarojs/taro'
+
+interface Color {
+  r: number
+  g: number
+  b: number
+}
+
 export default defineComponent({
   name: 'VerfCode',
   props: {
     'width': String,
     'height': String,
     'diff': {
-      validator: (value) => ['high', 'mid', 'low'].indexOf(value) !== -1,
+      validator: value => ['high', 'mid', 'low'].indexOf(value) !== -1,
       default: 'mid'
     },
     'onRefresh': {
@@ -24,7 +32,7 @@ export default defineComponent({
     const cvsWid = parseInt(props.width)
     const cvsHgt = parseInt(props.height)
     const cdInfo = reactive({
-      code: '', colors: []
+      code: '', colors: new Array<Color>()
     })
     const letters: string[] = []
     for (let i = 48; i <= 57; ++i) {
@@ -50,8 +58,9 @@ export default defineComponent({
         cdInfo.code += letter.letter
         cdInfo.colors.push(letter.color)
       }
-      const query = wx.createSelectorQuery()
-      query.select('#cvsVerfCode').fields({ node: true, size: true }).exec((res) => {
+      Taro.createSelectorQuery().select('#cvsVerfCode').fields({
+        node: true, size: true
+      }).exec(res => {
         const canvas = res[0].node
         const context = canvas.getContext('2d')
         context.fillStyle = 'white'
@@ -101,19 +110,13 @@ export default defineComponent({
         }
       }
     }
-    // const colorEquals = (colA, colB) => {
-    //   return Math.abs(colA.r - colB.r) < 100
-    //     && Math.abs(colA.g - colB.g) < 100
-    //     && Math.abs(colA.b - colB.b) < 100
-    // }
-    // const notBackColor = (color) => {
-    //   return !(color.r > 200 && color.g > 200 && color.b > 200)
-    // }
     const onClicked = (e) => {
       e.preventDefault()
       refresh()
     }
-    setTimeout(refresh, 1000)
+    onMounted(() => {
+      Taro.nextTick(refresh)
+    })
     return {
       width: props.width,
       height: props.height,

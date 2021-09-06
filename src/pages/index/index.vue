@@ -8,9 +8,15 @@
     <view class="scroll-container pt-0 pb-0" style="top: 40px">
       <good-item
         v-for="(good, index) in goods" :key="index"
-        :good="good"
         :btm-border="index !== goods.length - 1"
+        :good="good"
       />
+      <view v-if="!goods.length" class="h-100 center-container">
+        <view class="text-center">
+          <at-icon value="folder" size="60" color="#6190E899"/>
+          <view style="color: #6190E899">No Goods</view>
+        </view>
+      </view>
     </view>
     <view class="float-button">
       <at-fab size="small" @click="onAddGoodClicked">
@@ -21,19 +27,12 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue'
+import { defineComponent, Ref, ref } from 'vue'
 import GoodItem from '../../components/GoodItem.vue'
-import BasicLayout from '../../components/BasicLayout'
-import { getAllGoods } from '../../api/good'
 import Taro from '@tarojs/taro'
-
-interface Good {
-  name: string
-  price: [number, string]
-  logo: string,
-  location: string,
-  tags: string[]
-}
+import BasicLayout from '../../components/BasicLayout.vue'
+import { Good } from '../../commons'
+import { getAllGoods } from '../../api/good'
 
 export default defineComponent({
   name: 'home',
@@ -41,17 +40,24 @@ export default defineComponent({
     GoodItem,
     BasicLayout
   },
+  onShow () {
+    this.refresh ()
+  },
   setup () {
     const schWds = ref('')
-    const goods: Array<Good> = ref(getAllGoods())
-    const onSchChanged = (search) => {
+    const goods: Ref<Array<Good>> = ref([])
+
+    async function refresh () {
+      goods.value = await getAllGoods()
+    }
+    function onSchChanged (search) {
       schWds.value = search
       console.log(schWds)
     }
-    const onSchSubmit = () => {
+    function onSchSubmit () {
       console.log(schWds)
     }
-    const onAddGoodClicked = () => {
+    function onAddGoodClicked () {
       Taro.navigateTo({
         url: '../../pages/addGood/addGood'
       })
@@ -59,6 +65,8 @@ export default defineComponent({
     return {
       schWds,
       goods,
+
+      refresh,
       onSchChanged,
       onSchSubmit,
       onAddGoodClicked
@@ -66,12 +74,3 @@ export default defineComponent({
   }
 })
 </script>
-
-<style lang="scss">
-.float-button {
-  position: fixed;
-  right: 32rpx;
-  bottom: 32rpx;
-  z-index: 1100;
-}
-</style>

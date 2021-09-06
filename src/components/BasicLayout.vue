@@ -6,6 +6,17 @@
       </at-modal-content>
     </at-modal>
     <at-message :duration="10000"/>
+    <at-modal
+      class="confirm-dialog"
+      :isOpened="confirming"
+      title="Are you sure?"
+      :content="cfmContent"
+      cancelText="No"
+      confirmText="Yes"
+      @cancel="onCfmCanceled"
+      @confirm="onCfmClicked"
+      :closeOnClickOverlay="false"
+    />
     <slot/>
   </view>
 </template>
@@ -18,8 +29,20 @@ export default defineComponent({
   setup() {
     const store = useStore()
     const loading = computed(() => store.getters.isLoading)
+    const confirming = computed(() => store.getters.isConfirming)
+    const cfmContent = computed(() => store.getters.confirmContent)
+
+    const onCfmClicked = computed(() => store.getters.confirmCallback)
+    function onCfmCanceled () {
+      store.dispatch('hideConfirm')
+    }
     return {
-      loading
+      loading,
+      confirming,
+      cfmContent,
+
+      onCfmClicked,
+      onCfmCanceled
     }
   }
 })
@@ -28,6 +51,11 @@ export default defineComponent({
 <style lang="scss">
 .float-loading .at-activity-indicator__content {
   font-size: 15pt;
+}
+
+.confirm-dialog .at-modal__content {
+  min-height: 80rpx !important;
+  text-align: center;
 }
 </style>
 

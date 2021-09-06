@@ -2,7 +2,7 @@
   <view>
     <at-flex class="good-item" hover-class="click-bkgd" @tap="onItemClicked">
       <at-flex-item class="good-logo" :size="1" is-auto>
-        <image class="ml-12" mode="center" :src="good.logo"/>
+        <image class="ml-12" mode="center" :src="good.cover"/>
       </at-flex-item>
       <at-flex-item style="overflow: hidden">
         <view class="at-article__h2 mt-0 good-name">{{good.name}}</view>
@@ -12,13 +12,13 @@
               <at-icon value="map-pin" size="20"/>&nbsp;{{good.location}}
             </at-flex-item>
             <at-flex-item :size="6" class="text-right">
-              <at-icon value="heart" size="20"/>&nbsp;12
+              <at-icon value="heart" size="20"/>&nbsp;{{good.liked}}
             </at-flex-item>
           </at-flex>
         </view>
         <view class="at-article__p">
-          <text class="good-price" style="font-size: 10pt">{{good.price[1]}}</text>&nbsp;
-          <text class="good-price" style="font-size: 15pt">{{good.price[0]}}</text>&nbsp;
+          <text class="good-price" style="font-size: 10pt">{{good.unit}}</text>&nbsp;
+          <text class="good-price" style="font-size: 15pt">{{good.price}}</text>&nbsp;
         </view>
       </at-flex-item>
     </at-flex>
@@ -39,7 +39,7 @@ export default defineComponent({
   setup(props) {
     function onItemClicked () {
       Taro.navigateTo({
-        url: '../../pages/goodDtl/goodDtl'
+        url: `../../pages/goodDtl/goodDtl?gid=${props.good._index}`
       })
     }
     return {
@@ -60,7 +60,7 @@ export default defineComponent({
 
     image {
       width: 28vw;
-      height: 22vw
+      height: 22vw;
     }
   }
 
@@ -69,11 +69,11 @@ export default defineComponent({
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
     overflow: hidden;
-    text-overflow: ellipsis; 
+    text-overflow: ellipsis;
   }
 
   .good-price {
-    color: #FF4949;
+    color: #ff4949;
     vertical-align: bottom;
   }
 

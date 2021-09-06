@@ -8,6 +8,15 @@ import * as utils from '../utils/index.js'
 const db = await utils.getDatabase()
 const svrCfg = utils.getServerInfo()
 
+export enum RespCode {
+  NO_SUCH_USER = 4000,
+  WRONG_PASSWORD,
+  UNLOGINED,
+  WRONG_TOKEN,
+  USER_EXISTS,
+  DB_OPER_FAILED,
+}
+
 export async function login (ctx: Context, model: Model, key: string): Promise<void> {
   const reqBody = ctx.request.body
 
@@ -15,7 +24,9 @@ export async function login (ctx: Context, model: Model, key: string): Promise<v
     [key]: reqBody[key]
   })
   if(!result.length) {
-    ctx.body = { error: '用户名不存在' }
+    ctx.body = {
+      error: { message: '用户名不存在', code: RespCode.NO_SUCH_USER }
+    }
     return
   }
   const user = result[0]
@@ -23,23 +34,24 @@ export async function login (ctx: Context, model: Model, key: string): Promise<v
   const reqPwd = crypto.createHmac('sha256', svrCfg.secret)
     .update(reqBody.password).digest('hex')
   if (reqPwd !== user.password) {
-    ctx.body = { error: '错误的登录密码' }
+    ctx.body = {
+      error: { message: '错误的登录密码', code: RespCode.WRONG_PASSWORD }
+    }
     return
   }
 
   const payload: jwt.JwtPayload = {
     sub: 'login',
-    aud: user._id,
+    aud: user._index,
     iat: Date.now(),
     jti: uuidv4(),
     iss: svrCfg.admin,
     exp: Date.now() + (24 * 60 * 60 * 1000) // 1 day
   }
-  const logined = user.toObject()
-  delete logined.password
+  delete user.password
   ctx.body = {
     result: {
-      logined,
+      logined: user,
       token: jwt.sign(payload, svrCfg.secret),
       message: '登录成功！'
     }
@@ -51,7 +63,9 @@ export async function logstat (ctx: Context): Promise<void> {
 
   const token = <string>reqQuery.token
   if(!token) {
-    ctx.body = { error: '未登录' }
+    ctx.body = {
+      error: { message: '未登录', code: RespCode.UNLOGINED }
+    }
     return
   }
 
@@ -59,13 +73,14 @@ export async function logstat (ctx: Context): Promise<void> {
     jwt.verify(token, svrCfg.secret, (err: jwt.VerifyErrors | null, decoded: jwt.JwtPayload | undefined): void => {
       if (err) {
         res({
-          error: `登录token验证失败：${err.inner || JSON.stringify(err)}`
+          error: {
+            code: RespCode.WRONG_TOKEN,
+            message: `登录token验证失败：${err.inner || JSON.stringify(err)}`
+          }
         })
       } else {
         res({
-          result: {
-            message: '验证通过', payload: decoded
-          }
+          result: { message: '验证通过', payload: decoded }
         })
       }
     })
@@ -81,7 +96,7 @@ export async function regup (ctx: Context, model: Model, key: string): Promise<v
   })
   if (stored.length) {
     ctx.body = {
-      error: '用户名已经存在'
+      error: { message: '用户名已经存在', code: RespCode.USER_EXISTS }
     }
     return
   }
@@ -89,9 +104,12 @@ export async function regup (ctx: Context, model: Model, key: string): Promise<v
   const result = await db.save(model, reqBody)
   if(typeof result === 'string') {
     ctx.body = {
-      error: `持久化用户数据失败：${result}`
+      error: {
+        message: `持久化用户数据失败：${result}`,
+        code: RespCode.DB_OPER_FAILED
+      }
     }
   } else {
-    ctx.body = {result}
+    ctx.body = { result }
   }
 }

@@ -2,14 +2,14 @@
   <basic-layout>
     <at-form @onSubmit="onFormSubmit" :reportSubmit="true">
       <at-input
-        autoFocus
         clear
+        :focus="focusComp === 'phone'"
         :error="errMsgs.phone !== ''"
         name="phone"
         type="phone"
         placeholder="input phone"
-        :value="phone"
-        @change="val => { phone = onFieldChanged('phone', val) }"
+        :value="form.phone"
+        @change="val => { form.phone = onFieldChanged('phone', val) }"
       >
         <view
           :style="{
@@ -20,7 +20,7 @@
           @tap="onSendCode"
         >{{ showTipText() }}</view>
       </at-input>
-      <view v-if="errMsgs.phone !== ''" class="at-article__info" style="color: #FF4949">
+      <view v-if="errMsgs.phone !== ''" class="at-article__info err-msg">
         {{errMsgs.phone}}
       </view>
       <at-input
@@ -30,53 +30,68 @@
         @change="val => {}"
       />
       <at-input
+        clear
         :error="errMsgs.password !== ''"
+        :focus="focusComp === 'password'"
         name="password"
         type="password"
         placeholder="input password"
-        :value="password"
-        @change="val => { password = onFieldChanged('password', val) }"
+        :value="form.password"
+        @change="val => { form.password = onFieldChanged('password', val) }"
       />
-      <view v-if="errMsgs.password !== ''" class="at-article__info" style="color: #FF4949">
+      <view v-if="errMsgs.password !== ''" class="at-article__info err-msg">
         {{errMsgs.password}}
       </view>
       <at-input
-        clear
         required
+        :focus="focusComp === 'verfCode'"
+        name="verfCode"
         type="text"
         placeholder="input verfication code"
         :maxLength="5"
-        :value="verfCode"
-        @change="val => { verfCode = onFieldChanged('verfCode', val) }"
+        :value="form.verfCode"
+        @change="val => { form.verfCode = onFieldChanged('verfCode', val) }"
       >
         <verf-code width="100" height="25" :onRefresh="onVfCdRefreshed"/>
       </at-input>
-      <view v-if="errMsgs.verfCode !== ''" class="at-article__info" style="color: #FF4949">
+      <view v-if="errMsgs.verfCode !== ''" class="at-article__info err-msg">
         {{errMsgs.verfCode}}
       </view>
       <view style="padding: 20rpx 10rpx">
         <at-button type="primary" formType="submit" @click="onFormSubmit">Login / Register</at-button>
         <view class="at-article__info mt-20">forgot password?&nbsp;
-          <navigator style="display: inline-block; color: #78A4FA">click here</navigator>
+          <navigator class="inline-link">click here</navigator>
         </view>
       </view>
     </at-form>
+    <at-modal :isOpened="rgpCfmVisible">
+      <at-modal-header>Warning</at-modal-header>
+      <at-modal-content>
+        <view>
+          The phone number has not registered in our system,
+          would you like to register and login right now?
+        </view>
+        <view>
+          Or you just inputed wrong password. Then check
+          your account's password or try to
+          <navigator class="inline-link">find your passowrd</navigator> back
+        </view>
+      </at-modal-content>
+      <at-modal-action>
+        <at-button class="w-100 br-0 b-0" @click="rgpCfmVisible = false">Cancel</at-button>
+        <at-button type="primary" class="w-100 br-0 b-0" @click="onRgpAndLgn">Confirm</at-button>
+      </at-modal-action>
+    </at-modal>
   </basic-layout>
 </template>
 
 <script lang="ts">
-import { defineComponent, reactive, toRefs, ref } from 'vue'
+import { defineComponent, reactive, toRefs } from 'vue'
 import BasicLayout from '../../components/BasicLayout.vue'
 import VerfCode from '../../components/VerfCode.vue'
-import { validateForm } from '../../utils'
-import { login } from '../../api/user'
+import { FormState } from '../../commons'
+import { useStore } from 'vuex'
 import Taro from '@tarojs/taro'
-
-interface LoginFormState {
-  phone: string
-  password: string,
-  verfCode: string
-}
 
 export default defineComponent({
   name: 'login',
@@ -85,36 +100,17 @@ export default defineComponent({
     VerfCode
   },
   setup() {
-    const formState = reactive<LoginFormState>({
-      phone: '', password: '', verfCode: ''
-    })
-    const formOpnState = reactive({
+    const store = useStore()
+    const formState = new FormState({
+      phone: { default: '', rule: { required: true, pattern: /^(13[0-9]|14[579]|15[0-3,5-9]|16[6]|17[0135678]|18[0-9]|19[89])\d{8}$/ } },
+      password: { default: '', rule: { required: true, max: 18, min: 6 } },
+      avatar: { default: 'http://cdn.opteacher.top/super-salty/assets/images/my_light.png', rule: { required: true } },
+      verfCode: { default: '', rule: { required: true, pattern: '' } }
+    }, 'phone')
+    const optionState = reactive({
       sdCdDisabled: false,
-      errMsgs: {
-        phone: '',
-        password: '',
-        verfCode: ''
-      }
+      rgpCfmVisible: false
     })
-    const formRules = {
-      phone: {
-        required: true, // 必填选项
-        pattern: /^(13[0-9]|14[579]|15[0-3,5-9]|16[6]|17[0135678]|18[0-9]|19[89])\d{8}$/, // 【字符串专有】匹配的正则
-        // length: 10, 【字符串专有】要求的字符串长度
-        // max: 10, 最大的值（如果是字符串则为最大长度）
-        // min: 0, 最小的值（如果是字符串则为最小长度）
-        // enum: [], 给出值必须是其中的一项
-      },
-      password: {
-        required: true,
-        max: 18,
-        min: 6
-      },
-      verfCode: {
-        required: true,
-        pattern: ''
-      },
-    }
 
     function onSendCode () {
       console.log('TTTTTTT')
@@ -123,42 +119,43 @@ export default defineComponent({
       return 'send code'
     }
     function onVfCdRefreshed (verfCode) {
-      formRules.verfCode.pattern = verfCode
-      console.log(formRules)
+      formState.rules.verfCode.pattern = verfCode
     }
     async function onFormSubmit () {
-      const chkRes = validateForm(formState, formRules)
+      const chkRes = formState.validateForm()
       if (chkRes[0].length) {
-        formOpnState.errMsgs[chkRes[0]] = chkRes[1]
+        formState.errMsgs[chkRes[0]] = chkRes[1]
       } else {
         try {
-          console.log(await login(formState))
-        } finally {
-          Taro.switchTab({ url: '../../pages/index/index' })
+          await store.dispatch('login', formState.form)
+        } catch (err) {
+          if (err.code && err.code === 4000) {
+            optionState.rgpCfmVisible = true
+          }
+          return
         }
+        Taro.switchTab({ url: '../../pages/index/index' })
       }
     }
-    function onFieldChanged (key: string, val: any) {
-      const chkRes = validateForm({[key]: val}, formRules, [key])
-      if (chkRes[0].length) {
-        formOpnState.errMsgs[chkRes[0]] = chkRes[1]
-      } else {
-        formOpnState.errMsgs[key] = ''
+    async function onRgpAndLgn () {
+      try {
+        await store.dispatch('regup', formState.form)
+        await store.dispatch('login', formState.form)
+      } catch (err) {
+        return
       }
-      return val
+      Taro.switchTab({ url: '../../pages/index/index' })
     }
 
     return {
-      ...toRefs(formState),
-      ...toRefs(formOpnState),
-      formRules,
+      ...formState.toRefs(),
+      ...toRefs(optionState),
 
       onSendCode,
       showTipText,
       onFormSubmit,
-      validateForm,
       onVfCdRefreshed,
-      onFieldChanged
+      onRgpAndLgn
     }
   }
 })

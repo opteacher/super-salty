@@ -9,10 +9,15 @@
       @reach-bottom="onReachBtm"
     >
       <template #default="{ index, item }">
-        <news-item :news="item"/>
+        <news-item :news="item" :index="index"/>
         <at-divider :height="3"/>
       </template>
     </at-virtual-scroll>
+    <view class="float-button">
+      <at-fab size="small" @click="onAddNewsClicked">
+        <text class="at-fab__icon at-icon at-icon-add"/>
+      </at-fab>
+    </view>
   </basic-layout>
 </template>
 
@@ -21,6 +26,7 @@ import { defineComponent, ref } from 'vue'
 import NewsItem from '../../components/NewsItem'
 import BasicLayout from '../../components/BasicLayout'
 import { getAllNews } from '../../api/news'
+import Taro from '@tarojs/taro'
 
 export default defineComponent({
   components: {
@@ -29,16 +35,22 @@ export default defineComponent({
   },
   setup () {
     const news = ref(getAllNews())
-    const listHeight = wx.getSystemInfoSync().windowHeight
-    
+    const listHeight = Taro.getSystemInfoSync().windowHeight
+
     function onReachTop () {}
-    function onReachBtn () {}
+    function onReachBtm () {}
+    function onAddNewsClicked () {
+      Taro.navigateTo({
+        url: '../../pages/addNews/addNews'
+      })
+    }
     return {
       news,
       listHeight,
 
       onReachTop,
-      onReachBtn
+      onReachBtm,
+      onAddNewsClicked
     }
   }
 })
@@ -55,7 +67,6 @@ export default defineComponent({
 }
 
 .good-link {
-
   .item-thumb {
     width: 20vw !important;
     height: 20vw !important;

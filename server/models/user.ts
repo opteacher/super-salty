@@ -8,6 +8,7 @@ export default db.defineModel('user', {
   username: db.PropTypes.String,
   password: db.PropTypes.String,
   phone: db.PropTypes.String,
+  avatar: db.PropTypes.String,
 }, {
   middle: {
     create: {

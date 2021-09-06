@@ -13,7 +13,7 @@ type DefineMiddle = {
   }
 }
 
-export interface DefineOptions {
+export interface DefineOptions extends IndexStruct {
   middle?: DefineMiddle
   router: {
     prePath?: [any, string][]
@@ -21,18 +21,18 @@ export interface DefineOptions {
   }
 }
 
-export interface IdenOptions {
-  cvtId?: boolean
-}
-
-export interface SelectOptions extends IdenOptions {
+export interface SelectOptions extends IndexStruct {
   selCols?: string[]
   rawQuery?: boolean
   ext?: boolean
 }
 
-export interface SaveOptions extends IdenOptions {
+export interface SaveOptions extends IndexStruct {
   updMode?: UpdMode
+}
+
+export interface DeleteOptions extends IndexStruct {
+
 }
 
 export interface BasicStruct {
@@ -65,7 +65,7 @@ export interface DB {
   defineModel (modelName: string, struct: IndexStruct, options?: DefineOptions): MdlInf
   select (model: Model, condition?: any, options?: SelectOptions): Promise<any>
   save (model: Model, values: object, condition?: any, options?: SaveOptions): Promise<any>
-  delete (model: Model, condition?: any, options?: IdenOptions): Promise<number>
+  delete (model: Model, condition?: any, options?: DeleteOptions): Promise<number>
   sync (model: Model): Promise<void>
   dump (model: Model, flPath: string): Promise<number>
 }

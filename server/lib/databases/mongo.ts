@@ -70,7 +70,7 @@ export default class Mongo implements com.DB {
   genPreRoutes(): void {
     for (const [mname, minfo] of Mongo.models) {
       for (const [cname, prop] of this.getRefCollection(minfo.model)) {
-        const prePath: [any, string] = [prop, `${mname}/:${mname}_id`]
+        const prePath: [any, string] = [prop, `${mname}/:${mname}_index`]
         if (!Mongo.models.has(cname)) { continue }
         const tgtMdlInf = Mongo.models.get(cname)
         if (!tgtMdlInf) {
@@ -84,7 +84,7 @@ export default class Mongo implements com.DB {
       }
     }
   }
-  
+
   defineModel (modelName: string, struct: com.IndexStruct, options: com.DefineOptions = {
     router: { methods: [] }
   }): com.MdlInf {
@@ -126,10 +126,10 @@ export default class Mongo implements com.DB {
   private getRefCollection (model: com.Model): Map<string, any> {
     const ret: Map<string, any> = new Map<string, any>([])
     const mgModel = <mongoose.Model<any>>model
-    if (!Mongo.models.has(mgModel.name)) {
+    if (!Mongo.models.has(mgModel.modelName)) {
       return ret
     }
-    const minfo = Mongo.models.get(mgModel.name)
+    const minfo = Mongo.models.get(mgModel.modelName)
     if (!minfo) {
       return ret
     }
@@ -145,10 +145,20 @@ export default class Mongo implements com.DB {
     return ret
   }
 
-  async select(model: com.Model, condition?: any, options: com.SelectOptions = {}): Promise<any> {
-    if (condition && condition.id && options.cvtId) {
-      condition._id = condition.id
-      delete condition.id
+  private cvtIdToIdx (res: any): any {
+    const ret = res.toObject()
+    ret._index = ret._id
+    delete ret._id
+    return ret
+  }
+
+  async select(model: com.Model, condition?: any, options?: com.SelectOptions): Promise<any> {
+    options = Object.assign({
+      selCols: [], rawQuery: false, ext: false
+    }, options)
+    if (condition && condition._index) {
+      condition._id = condition._index
+      delete condition._index
     }
 
     await this.connect()
@@ -186,21 +196,22 @@ export default class Mongo implements com.DB {
       res = res.limit(Number.parseInt(limit))
     }
     if (options.ext) {
-      for (const [, prop] of Object.entries(this.getRefCollection(model))) {
+      for (const prop of this.getRefCollection(model)) {
         res = res.populate(prop)
       }
     }
-    return res.exec()
+    return res.exec().then(ress => Promise.resolve(ress.map(this.cvtIdToIdx)))
   }
 
-  async save(model: com.Model, values: object, condition?: any, options: com.SaveOptions = {
-    cvtId: true, updMode: 'cover'
-  }): Promise<any> {
+  async save(model: com.Model, values: object, condition?: any, options?: com.SaveOptions): Promise<any> {
     const mgModel = <mongoose.Model<any>>model
 
-    if (condition && condition.id && options.cvtId) {
-      condition._id = condition.id
-      delete condition.id
+    options = Object.assign({
+      cvtId: true, updMode: 'cover'
+    }, options)
+    if (condition && condition._index) {
+      condition._id = condition._index
+      delete condition._index
     }
 
     await this.connect()
@@ -211,11 +222,9 @@ export default class Mongo implements com.DB {
     }
 
     if (!ress || !ress.length) {
-      return Promise.all([
-        mgModel.create(values)
-      ])
-    } 
-    
+      return mgModel.create(values).then(res => Promise.resolve([this.cvtIdToIdx(res)]))
+    }
+
     const pmss: Promise<any>[] = []
     for (const res of ress) {
       for (const [key, value] of Object.entries(values)) {
@@ -243,27 +252,27 @@ export default class Mongo implements com.DB {
       }
       pmss.push(res.save())
     }
-    return Promise.all(pmss)
+    return Promise.all(pmss.map(pms => pms.then(res => Promise.resolve(this.cvtIdToIdx(res)))))
   }
 
-  delete(model: com.Model, condition?: any, options: com.IdenOptions = {
-    cvtId: true
-  }): Promise<number> {
+  delete(model: com.Model, condition?: any, options?: com.DeleteOptions): Promise<number> {
     const mgModel = <mongoose.Model<any>>model
 
-    if (condition && condition.id && options.cvtId) {
-      condition._id = condition.id
-      delete condition.id
+    if (condition && condition._index) {
+      condition._id = condition._index
+      delete condition._index
     }
     return this.connect()
-      .then(() => mgModel.deleteMany(condition))
+      .then(() => mgModel.deleteOne(condition))
       .then(res => Promise.resolve(res.deletedCount || 0))
   }
 
   sync(model: com.Model): Promise<void> {
-    return this.connect().then(() => {
-      (<mongoose.Model<any>>model).deleteMany()
-    })
+    return this.connect().then(() => new Promise((res, rej) => {
+      (<mongoose.Model<any>>model).deleteMany({}, err => {
+        err ? rej(err) : res()
+      })
+    }))
   }
 
   async dump(model: com.Model, flPath: string): Promise<number> {

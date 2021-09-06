@@ -1,19 +1,23 @@
 <template>
   <basic-layout>
-    <view class="scroll-container p-0" style="bottom: 132rpx">
-      <view class="at-article">
+    <view class="scroll-container p-0" :style="{ bottom: review ? '' : '132rpx' }">
+      <at-skeleton v-if="!good.name"
+        style="margin: 10px"
+        type="list-item-avatar, divider, list-item-three-line, card-heading, image, actions"
+      />
+      <view v-else class="at-article">
         <at-flex align="center" justify="around">
           <at-flex-item :size="6" class="pl-20">
-            <text style="font-size: 10pt; color: #FF4949">{{good.price[1]}}</text>
-            <text style="font-size: 15pt; color: #FF4949">{{good.price[0]}}</text>
+            <text style="font-size: 10pt; color: #FF4949">{{good.unit}}</text>
+            <text style="font-size: 15pt; color: #FF4949">{{good.price}}</text>
           </at-flex-item>
           <at-flex-item :size="6" class="pr-20">
             <view class="at-article__info m-0 text-right">
               <text>
-                <at-icon value="eye" size="20"/>&nbsp;99
+                <at-icon value="eye" size="20"/>&nbsp;{{good.viewed}}
               </text>&nbsp;
               <text>
-                <at-icon value="heart" size="20"/>&nbsp;12
+                <at-icon value="heart" size="20"/>&nbsp;{{good.liked}}
               </text>
             </view>
           </at-flex-item>
@@ -21,15 +25,14 @@
         <view class="at-article__h1 mt-0">{{good.name}}</view>
         <view style="margin: 0 30rpx">
           <at-tag
-            v-for="(tag, idx) in good.tags" :key="idx"
-            class="good-tag"
-            circle
-            :active="true"
+            v-for="(tag, idx) in good.tags" :key="idx.toString()"
+            class="good-tag" circle :active="true"
           >{{tag}}</at-tag>
         </view>
         <at-flex align="center" justify="around">
           <at-flex-item :size="6">
-            <at-list-item class="owner" :title="good.owner" :thumb="good.avatar"/>
+            <at-list-item class="owner" :thumb="good.owner.avatar"
+              :title="good.owner.username || good.owner.phone"/>
           </at-flex-item>
           <at-flex-item :size="6">
             <view class="at-article__info text-right">
@@ -42,14 +45,14 @@
             <view class="at-article__p">{{good.desc}}</view>
           </view>
           <view class="at-article__section">
-            <image v-for="(img, idx) in good.images" :key="idx"
+            <image v-for="(img, idx) in good.images" :key="idx.toString()"
               class="at-article__img" :src="img" mode="widthFix"
             />
           </view>
         </view>
       </view>
     </view>
-    <view class="fix-bottom p-0">
+    <view class="fix-bottom p-0" v-if="!review">
       <at-flex justify="around" align="center">
         <at-flex-item :size="3">
           <view hover-class="click-bkgd" class="oper-link right-border">
@@ -64,7 +67,7 @@
           </view>
         </at-flex-item>
         <at-flex-item :size="6" style="padding: 20rpx 20rpx 20rpx 0">
-          <at-button type="primary">
+          <at-button type="primary" @click="onToChatClicked">
             <at-icon value="message" size="30"/>&nbsp;Chat now
           </at-button>
         </at-flex-item>
@@ -74,39 +77,46 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, toRefs } from 'vue'
-import BasicLayout from '../../components/BasicLayout'
+import { defineComponent, reactive } from 'vue'
+import BasicLayout from '../../components/BasicLayout.vue'
+import Taro from '@tarojs/taro'
+import { copyGood, Good, newGood } from '../../commons'
+import { getIdenGood } from '../../api/good'
 
-export default defineComponent ({
+export default defineComponent({
   name: 'goodDetail',
   components: {
     BasicLayout
   },
-  props: {
-    good: {
-      type: Object,
-      default: {
-        name: 'abcdabcdabcdabcdabcdabcdabcdabcdabcdabcd',
-        owner: 'dsfsdfsfsfsfsdfsdfsfsdfsdfsfsfdssfd',
-        avatar: 'https://tse3-mm.cn.bing.net/th/id/OIP-C.JeWIs0BziEpuWCEJYLQZogHaFS?pid=ImgDet&rs=1',
-        desc: 'dsfdsfjgodjgodjffwijfpwmfojeorfeorgoerngonrmogfrofijpesfjpwfjperojfgowerjfoejrpgejrogerigoerij',
-        price: [50, '￥'],
-        logo: 'https://tse3-mm.cn.bing.net/th/id/OIP-C.JeWIs0BziEpuWCEJYLQZogHaFS?pid=ImgDet&rs=1',
-        images: [
-          'https://tse1-mm.cn.bing.net/th/id/R-C.980be5bdb83fa934bbf321b1514571f1?rik=fNIj32mTiu386g&riu=http%3a%2f%2fpic21.nipic.com%2f20120531%2f9969356_181513630134_2.jpg&ehk=l1jS8GTS0ZArtbRXBpgOh%2fX8xBWi6gZn7QwlvuL10vY%3d&risl=&pid=ImgRaw&r=0',
-          'https://tse1-mm.cn.bing.net/th/id/R-C.a7a487afd8487d2cb130231652adca65?rik=n984yib5xDVBWw&riu=http%3a%2f%2fpic38.nipic.com%2f20140222%2f17916857_203205384108_2.jpg&ehk=S6iHpOwt%2bEGVIWnnoxfneexgfUfqssYgzVIUTAnmB7w%3d&risl=&pid=ImgRaw&r=0',
-          'https://tse1-mm.cn.bing.net/th/id/R-C.9fdb319058c1cff799db7e334879c229?rik=KkCaDfFnMexMWg&riu=http%3a%2f%2fpic18.nipic.com%2f20120206%2f7366519_110724384166_2.jpg&ehk=OvhcEzqeUG3CrOCjG6bVgqRpiBIDPR%2fTjRyYGQaTEfQ%3d&risl=&pid=ImgRaw&r=0',
-          'https://tse1-mm.cn.bing.net/th/id/R-C.116f43b1d4077875c7cb5ea28e786691?rik=bWY%2fKthK1f27Mw&riu=http%3a%2f%2fimg.juimg.com%2ftuku%2fyulantu%2f140306%2f330804-14030622424570.jpg&ehk=GjOXLGIobXy9L8ytg%2bmToWIipx%2b8%2bGRiRmP6L8Ag1R8%3d&risl=&pid=ImgRaw&r=0'
-        ],
-        tags: ['local tradable', 'nearly new'],
-        location: 'Shanghai'
-      },
-      required: true
-    }
+  onShow () {
+    this.refresh()
   },
-  setup(props) {
+  setup() {
+    const good: Good = reactive(newGood())
+    const queryParams = Taro.getCurrentInstance().router?.params || {}
+
+    async function refresh () {
+      if (queryParams.gid) {
+        copyGood(await getIdenGood(queryParams.gid), good)
+      }
+      if (queryParams.good) {
+        copyGood(JSON.parse(queryParams.good), good)
+      }
+      if (!good.name) {
+        Taro.navigateBack({ delta: 1 })
+      }
+    }
+    function onToChatClicked () {
+      Taro.navigateTo({
+        url: `../../pages/chatRoom/chatRoom?gid=${queryParams.gid}`
+      })
+    }
     return {
-      ...toRefs(props)
+      good,
+      review: queryParams.review,
+
+      refresh,
+      onToChatClicked
     }
   }
 })
@@ -119,19 +129,19 @@ export default defineComponent ({
 
   .inner-text {
     font-size: 10pt;
-    color: #A8C6DF;
+    color: #a8c6df;
     vertical-align: middle;
   }
 }
 
 .right-border {
-  border-right: 1px solid #CCC5
+  border-right: 1px solid #ccc5;
 }
 
 .good-tag {
   margin-right: 10rpx;
-  border-color: #78A4FA;
-  color: #78A4FA;
+  border-color: #78a4fa;
+  color: #78a4fa;
 }
 
 .owner .item-thumb__info {

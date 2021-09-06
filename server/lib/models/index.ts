@@ -2,7 +2,7 @@ import _ from 'lodash'
 import Router from 'koa-router'
 import Path from 'path'
 import * as utils from '../utils/index.js'
-import { DB, MdlInf } from '../databases/index.js'
+import { DB, MdlInf, Method } from '../databases/index.js'
 
 const router = new Router()
 
@@ -65,33 +65,37 @@ export default async function (mdlsPath: string, dbCfgPath: string, mdlCfgPath: 
 
   // @steps{3}:遍历所有模型
   console.log('模型生成的路由：')
-  router.get(`/${cfg.prefix}/mdl/v${cfg.version}/model`, async ctx => {
-    ctx.body = { version: cfg.version }
-  })
-  console.log(`GET\t/${cfg.prefix}/mdl/v${cfg.version}/model`)
+  const mdlRoutes: {
+    path: string
+    method: string,
+    params: any[]
+  }[] = []
   for (const [mname, minfo] of Object.entries(models)) {
     // @steps{3_2}:定义所有用到的URL
-    const GetUrl = `/${cfg.prefix}/mdl/v${cfg.version}/${mname}/:id`
+    const GetUrl = `/${cfg.prefix}/mdl/v${cfg.version}/${mname}/:index`
     const AllUrl = `/${cfg.prefix}/mdl/v${cfg.version}/${mname}s`
     const PostUrl = `/${cfg.prefix}/mdl/v${cfg.version}/${mname}`
     const PutUrl = GetUrl
     const DelUrl = GetUrl
     const prePath = minfo.options.router.prePath
-    const LnkUrl = prePath ? `/${cfg.prefix}/mdl/v${cfg.version}/${prePath.map(pp => pp[1]).join('/')}/${mname}/:id` : null
+    const LnkUrl = prePath ? `/${cfg.prefix}/mdl/v${cfg.version}/${prePath.map(pp => pp[1]).join('/')}/${mname}/:index` : null
 
     // @steps{3_3}:遍历用户要求的method接口
     for (const method of minfo.options.router.methods) {
       // @steps{3_3_2}:根据method跳转到相应的处理逻辑中
+      let path = ''
+      let params = []
       switch (method.toLowerCase()) {
         case 'get':
           // @steps{3_3_2_1}:*GET*：根据id查找，**会联表**
           router.get(GetUrl, async ctx => {
             ctx.body = {
-              data: await db.select(minfo.model, {
-                id: ctx.params.id
-              }, { ext: true })
+              data: (await db.select(minfo.model,
+                { _index: ctx.params.index }, { ext: true }
+              ))[0]
             }
           })
+          path = GetUrl
           console.log(`GET\t${GetUrl}`)
           break
         case 'all':
@@ -101,13 +105,19 @@ export default async function (mdlsPath: string, dbCfgPath: string, mdlCfgPath: 
               data: await db.select(minfo.model, ctx.query)
             }
           })
+          path = AllUrl
+          params.push(
+            { 'order_by': 'Prop Name' },
+            { 'limit': 'Number' },
+            { 'page': 'Number' }
+          )
           console.log(`GET\t${AllUrl}`)
           break
         case 'post':
           // @steps{3_3_2_3}:*POST*：**使用form表单提交**
           router.post(PostUrl, async ctx => {
             ctx.body = {
-              data: await db.save(minfo.model, ctx.request.body)
+              data: (await db.save(minfo.model, ctx.request.body))[0]
             }
           })
           console.log(`POST\t${PostUrl}`)
@@ -116,10 +126,14 @@ export default async function (mdlsPath: string, dbCfgPath: string, mdlCfgPath: 
           // @steps{3_3_2_4}:*PUT*：同POST
           router.put(PutUrl, async ctx => {
             ctx.body = {
-              data: await db.save(minfo.model, ctx.request.body, {
-                id: ctx.params.id
-              })
+              data: (await db.save(minfo.model,
+                ctx.request.body, { index: ctx.params.index }
+              ))[0]
             }
+          })
+          path = PutUrl
+          params.push({
+            'need_update_prop': 'value'
           })
           console.log(`PUT\t${PutUrl}`)
           break
@@ -128,10 +142,11 @@ export default async function (mdlsPath: string, dbCfgPath: string, mdlCfgPath: 
           router.delete(DelUrl, async ctx => {
             ctx.body = {
               data: await db.delete(minfo.model, {
-                id: ctx.params.id
+                index: ctx.params.index
               })
             }
           })
+          path = DelUrl
           console.log(`DELETE\t${DelUrl}`)
           break
         case 'link':
@@ -153,19 +168,27 @@ export default async function (mdlsPath: string, dbCfgPath: string, mdlCfgPath: 
               return
             }
             const colNam = ary[0]
-            const pamId = ary[1].slice(1)
+            const pamIdx = ary[1].slice(1)
             const preMdl = models[colNam].model
-            const condition = { id: ctx.params[pamId] }
+            const condition = { id: ctx.params[pamIdx] }
             ctx.body = {
-              data: await db.save(preMdl, { [prop]: ctx.params.id }, condition, {
+              data: await db.save(preMdl, { [prop]: ctx.params.index }, condition, {
                 updMode: 'append'
               })
             }
           })
+          path = LnkUrl
           console.log(`LINK\t${LnkUrl}`)
           break
       }
+      mdlRoutes.push({
+        path, method, params
+      })
     }
   }
+  router.get(`/${cfg.prefix}/mdl/v${cfg.version}/model`, async ctx => {
+    ctx.body = { version: cfg.version, routes: mdlRoutes }
+  })
+  console.log(`GET\t/${cfg.prefix}/mdl/v${cfg.version}/model`)
   return Promise.resolve({ router, models, db })
 }

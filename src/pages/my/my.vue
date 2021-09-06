@@ -42,7 +42,6 @@
 
 <script>
 import { defineComponent, ref } from 'vue'
-import { getAccount } from '../../api/user'
 import { getAllGoods } from '../../api/good'
 import GoodCard from '../../components/GoodCard.vue'
 import BasicLayout from '../../components/BasicLayout'
@@ -54,7 +53,7 @@ export default defineComponent({
     BasicLayout
   },
   setup () {
-    const account = ref(getAccount())
+    const account = ref(require('../../resources/account.json').data)
     const orders = [{
       iconInfo: {
         size: 30,

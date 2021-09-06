@@ -1,3 +1,3 @@
 export default {
-  navigationBarTitleText: 'addGood'
+  navigationBarTitleText: 'Add Good'
 }
