@@ -7,55 +7,69 @@
       :title="good.name"
       extraText="More info"
       :thumb="good.cover"
-      style="border-bottom: 3rpx solid #f0f0f0"
+      style=""
     />
-    <view class="scroll-container p-50 msg-panel" :style="{
-      top: '140rpx',
-      bottom: operVisible ? '65vw' : '15vw'
+    <scroll-view id="pnlMessages" :scroll-y="true" :style="{
+      'margin-top': '140rpx',
+      'margin-bottom': msgPanelBtm
     }">
-      <!-- owner's messages -->
-      <!-- <at-flex class="mb-40" justify="around">
-        <at-flex-item :size="2">
-          <at-avatar class="msg-avatar" circle
-            image="http://cdn.opteacher.top/super-salty/assets/images/my_light.png"
-          />
-        </at-flex-item>
-        <at-flex-item :size="10">
-          <view class="msg-container">
-            <view class="msg-arrow" style="left: 6rpx"/>
-            <view class="msg-content ml-15">dsfsdfdsfsdfsd</view>
-          </view>
-          <view class="at-article__info m-0" style="float: right">2021/9/6 12:34:33</view>
-        </at-flex-item>
-      </at-flex> -->
-      <!-- my messages -->
-      <!-- <at-flex class="mb-40" justify="around">
-        <at-flex-item :size="1">
-          <at-activity-indicator class="mt-20"/>
-        </at-flex-item>
-        <at-flex-item :size="9">
-          <view class="msg-container">
-            <view class="msg-arrow" style="right: 6rpx"/>
-            <view class="msg-content mr-15">dsfsdfdsfsdfsdddf;ksdfjksogjodigjodjgpsdjfposkfpospfkepofkweokesfsfdssdfsdfsdfsfsdfsdfsdfsfrgrfsfsefefesfsefsfsefsefesfesfsefsefes</view>
-          </view>
-          <view class="at-article__info m-0" style="float: left">2021/9/6 12:34:33</view>
-        </at-flex-item>
-        <at-flex-item :size="2">
-          <at-avatar class="msg-avatar" circle
-            image="http://cdn.opteacher.top/super-salty/assets/images/my_light.png"
-          />
-        </at-flex-item>
-      </at-flex> -->
-    </view>
-    <view class="fix-bottom p-0">
+      <view class="p-20">
+        <template v-for="(message, index) in messages" :key="index">
+          <!-- owner's messages -->
+          <at-flex
+            v-if="message.sender === 'seller'"
+            :class="{'mb-40': index !== messages.length - 1}"
+            justify="around"
+          >
+            <at-flex-item :size="2">
+              <at-avatar class="msg-avatar" circle :image="message.good.owner.avatar"/>
+            </at-flex-item>
+            <at-flex-item :size="10">
+              <view class="msg-container">
+                <view class="msg-arrow" style="left: 6rpx"/>
+                <view class="msg-content ml-15">{{message.content}}</view>
+              </view>
+              <view class="at-article__info m-0" style="float: right">
+                {{message.createdAt.toLocaleString()}}
+              </view>
+            </at-flex-item>
+          </at-flex>
+          <!-- my messages -->
+          <at-flex
+            v-else-if="message.sender === 'buyer'"
+            :class="{'mb-40': index !== messages.length - 1}"
+            justify="around"
+          >
+            <at-flex-item v-if="ldgMessage === index" :size="1">
+              <at-activity-indicator class="mt-20"/>
+            </at-flex-item>
+            <at-flex-item :size="ldgMessage === index ? 9 : 10">
+              <view class="msg-container">
+                <view class="msg-arrow" style="right: 6rpx"/>
+                <view class="msg-content mr-15">{{message.content}}</view>
+              </view>
+              <view class="at-article__info m-0" style="float: left">
+                {{message.createdAt.toLocaleString()}}
+              </view>
+            </at-flex-item>
+            <at-flex-item :size="2">
+              <at-avatar class="msg-avatar" circle :image="message.good.owner.avatar"/>
+            </at-flex-item>
+          </at-flex>
+        </template>
+      </view>
+    </scroll-view>
+    <view class="fix-bottom p-0" style="z-index: 50; background-color: #FAFBFC">
       <at-flex align="center" style="height: 15vw">
         <at-flex-item :size="8">
           <at-input
+            clear
             name="content"
             type="text"
             placeholder="input message"
             :border="false"
-            v-model:value="form.content"
+            :value="form.content"
+            :focus="focusComp === 'content'"
             @change="val => { form.content = onFieldChanged('content', val) }"
           />
         </at-flex-item>
@@ -72,6 +86,9 @@
           </at-fab>
         </at-flex-item>
       </at-flex>
+      <view v-if="errMsgs.content !== ''" class="at-article__info err-msg" style="height: 5vw">
+        {{errMsgs.content}}
+      </view>
       <at-accordion
         class="collapse-toolbox"
         :hasBorder="false"
@@ -79,7 +96,7 @@
         :isAnimation="false"
       >
         <at-grid
-          class="tools-grid mt-20"
+          class="tools-grid"
           :columnNum="4"
           :hasBorder="false"
           :data="toolBox"
@@ -91,11 +108,12 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, reactive, toRefs } from 'vue'
+import { computed, defineComponent, reactive, Ref, ref, toRefs } from 'vue'
 import BasicLayout from '../../components/BasicLayout.vue'
 import Taro from '@tarojs/taro'
-import { copyGood, FormState, Good, newGood } from '../../commons'
+import { copyGood, FormState, Good, newGood, Message } from '../../commons'
 import { getIdenGood } from '../../api/good'
+import { useStore } from 'vuex'
 export default defineComponent({
   components: {
     BasicLayout
@@ -104,18 +122,27 @@ export default defineComponent({
     this.refresh()
   },
   setup () {
+    const store = useStore()
     const good: Good = reactive(newGood())
-    const owner = computed(() => {
-      return good.owner ? good.owner.username || good.owner.phone : ''
-    })
-    const cost = computed(() => {
-      return good.price ? good.unit + good.price : ''
-    })
     const formState = new FormState({
       content: { default: '', rule: { required: true } },
-    })
+    }, 'content')
     const optionState = reactive({
-      operVisible: false
+      operVisible: false,
+      owner: computed(() => {
+        return good.owner ? good.owner.username || good.owner.phone : ''
+      }),
+      cost: computed(() => {
+        return good.price ? good.unit + good.price : ''
+      }),
+      msgPanelBtm: computed(() => {
+        return optionState.operVisible ? `${
+          70 + (formState.errMsgs.content.length ? 5 : 0)
+        }vw` : `${
+          15 + (formState.errMsgs.content.length ? 5 : 0)
+        }vw`
+      }),
+      ldgMessage: -1
     })
     const toolBox = [
       {
@@ -141,6 +168,18 @@ export default defineComponent({
         callback: RequirePrice
       }
     ]
+    const messages: Ref<Message[]> = ref([])
+
+    setInterval(() => {
+      messages.value.push({
+        content: 'aslksdlfksmdlfksdlkfsdlkfmlsdkmf',
+        sender: 'seller',
+        good,
+        buyer:  store.getters.loginedUser,
+        createdAt: new Date()
+      })
+      scrollToEnd()
+    }, 10000)
 
     async function refresh () {
       const queryParams = Taro.getCurrentInstance().router?.params || {}
@@ -150,11 +189,41 @@ export default defineComponent({
       }
       copyGood(await getIdenGood(queryParams.gid), good)
     }
+    function scrollToEnd () {
+      Taro
+        .createSelectorQuery()
+        .select('#pnlMessages')
+        .fields({ scrollOffset: true }, fields => {
+          console.log(fields)
+          Taro.pageScrollTo({
+            selector: '#pnlMessages',
+            scrollTop: fields.scrollHeight,
+            duration: 300,
+            success: res => {
+              console.log(res)
+            }
+          })
+        })
+        .exec()
+    }
     function onMsgSubmitted () {
       const chkRes = formState.validateForm()
       if (chkRes[0].length) {
         formState.errMsgs[chkRes[0]] = chkRes[1]
       } else {
+        messages.value.push({
+          content: formState.form.content,
+          sender: 'buyer',
+          good,
+          buyer: store.getters.loginedUser,
+          createdAt: new Date()
+        })
+        formState.form.content = ''
+        optionState.ldgMessage = messages.value.length - 1
+        setTimeout(() => {
+          optionState.ldgMessage = -1
+        }, 1000)
+        scrollToEnd()
         // const good = await addNewGood(formState.form)
         // Taro.navigateTo({
         //   url: `../../pages/addGoodScs/addGoodScs?gid=${good._index}`
@@ -174,9 +243,8 @@ export default defineComponent({
     }
     return {
       good,
-      cost,
-      owner,
       toolBox,
+      messages,
       ...formState.toRefs(),
       ...toRefs(optionState),
 
@@ -189,12 +257,15 @@ export default defineComponent({
 </script>
 
 <style lang="scss">
-.good-cut .item-thumb {
-  width: 100rpx;
-  height: 100rpx;
-}
-.msg-panel {
-  background-color: #ecf5fd;
+.good-cut {
+  border-bottom: 3rpx solid #f0f0f0;
+  z-index: 50;
+  background-color: #fafbfc;
+
+  .item-thumb {
+    width: 100rpx;
+    height: 100rpx;
+  }
 }
 
 .msg-avatar {
@@ -212,7 +283,7 @@ export default defineComponent({
   .msg-content {
     min-height: 80rpx;
     padding: 15rpx 20rpx;
-    background-color: #f1e4ed;
+    background-color: #ecf5fd;
     border-radius: 10rpx;
     white-space: normal;
     word-wrap: break-word;
@@ -225,10 +296,10 @@ export default defineComponent({
     display: block;
     width: 20rpx;
     height: 20rpx;
-    background: #f1e4ed;
+    background: #ecf5fd;
     border-style: solid;
     border-width: 1rpx;
-    border-color: #f1e4ed;
+    border-color: #ecf5fd;
     transform: rotate(45deg);
     top: 40rpx;
   }
@@ -238,8 +309,11 @@ export default defineComponent({
   display: none !important;
 }
 
-.tools-grid .content-inner__text {
-  margin-top: 0 !important;
+.tools-grid {
+  margin-top: 5vw;
+  .content-inner__text {
+    margin-top: 0 !important;
+  }
 }
 
 .toolbox-btn {

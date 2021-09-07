@@ -291,3 +291,20 @@ export function copyGood (src: any, tgt: Good): Good {
   tgt.liked = src.liked
   return tgt
 }
+
+export interface Message {
+  content: string
+  sender: string // seller/buyer
+  good: Good
+  buyer: User
+  createdAt: Date
+}
+
+export function copyMessage (src: any, tgt: Message): Message {
+  copyGood(src.good, tgt.good)
+  copyUser(src.buyer, tgt.buyer)
+  tgt.content = src.content
+  tgt.sender = src.sender
+  tgt.createdAt = src.createdAt
+  return tgt
+}

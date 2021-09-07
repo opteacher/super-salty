@@ -12,7 +12,7 @@ const state = {
   logined: {
     token: '',
     account: '',
-    avatar: ''
+    user: null
   }
 }
 
@@ -71,8 +71,8 @@ const getters = {
   confirmCallback (state) {
     return state.confirm.confirmed
   },
-  logined (state) {
-    return omit(state.logined, ['token'])
+  loginedUser (state) {
+    return state.logined.user
   },
   lgnToken (state) {
     return state.logined.token
