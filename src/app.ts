@@ -27,9 +27,11 @@ import {
   AtButton,
   AtInput,
   AtInputNumber,
+  AtCheckbox,
   AtBadge,
   AtMessage,
-  AtSkeleton
+  AtSkeleton,
+  AtSwitch
 } from 'taro-ui-vue3/lib'
 import 'taro-ui-vue3/dist/style/components/modal.scss'
 import 'taro-ui-vue3/dist/style/components/activity-indicator.scss'
@@ -51,11 +53,13 @@ import 'taro-ui-vue3/dist/style/components/virtual-scroll.scss'
 import 'taro-ui-vue3/dist/style/components/button.scss'
 import 'taro-ui-vue3/dist/style/components/input.scss'
 import 'taro-ui-vue3/dist/style/components/input-number.scss'
+import 'taro-ui-vue3/dist/style/components/checkbox.scss'
 import 'taro-ui-vue3/dist/style/components/badge.scss'
 import 'taro-ui-vue3/dist/style/components/tabs.scss'
 import 'taro-ui-vue3/dist/style/components/article.scss'
 import 'taro-ui-vue3/dist/style/components/message.scss'
 import 'taro-ui-vue3/dist/style/components/skeleton.scss'
+import 'taro-ui-vue3/dist/style/components/switch.scss'
 import './app.scss'
 
 const App = createApp({
@@ -74,6 +78,7 @@ App.use(createUI({
   AtButton,
   AtInput,
   AtInputNumber,
+  AtCheckbox,
   AtBadge,
   AtFlexItem,
   AtIcon,
@@ -92,7 +97,8 @@ App.use(createUI({
   AtCard,
   AtVirtualScroll,
   AtMessage,
-  AtSkeleton
+  AtSkeleton,
+  AtSwitch
 }))
 
 export default App

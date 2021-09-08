@@ -16,9 +16,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { bkHost } from '../commons'
-import Taro from '@tarojs/taro'
-import store from '../store'
+import { uploadImage } from '../commons'
 
 export default defineComponent({
   name: 'UploadImageButton',
@@ -33,33 +31,14 @@ export default defineComponent({
   },
   setup (props) {
     async function onUploadImgClicked () {
-      const res = await Taro.chooseImage({
-        count: 1
-      })
-      store.dispatch('showLoading', true)
-      const uploadTask = Taro.uploadFile({
-        url: `${bkHost}/super-salty/api/v1/file`, //仅为示例，非真实的接口地址
-        filePath: res.tempFilePaths[0],
-        name: 'file',
-        success (res) {
-          const data = JSON.parse(res.data)
-          //do something
-          console.log(data)
-          const ptype = typeof props.form[props.prop]
-          if (ptype === 'object') {
-            props.form[props.prop].push(data.result)
-          } else {
-            props.form[props.prop] = data.result
-          }
-          props.complete(data.result)
-          store.dispatch('showLoading', false)
-        }
-      })
-      uploadTask.progress((res) => {
-        console.log('上传进度', res.progress)
-        console.log('已经上传的数据长度', res.totalBytesSent)
-        console.log('预期需要上传的数据总长度', res.totalBytesExpectedToSend)
-      })
+      const imgURL = await uploadImage()
+      const ptype = typeof props.form[props.prop]
+      if (ptype === 'object') {
+        props.form[props.prop].push(imgURL)
+      } else {
+        props.form[props.prop] = imgURL
+      }
+      props.complete(imgURL)
     }
 
     return {

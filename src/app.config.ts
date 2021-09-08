@@ -2,11 +2,12 @@ export default {
   pages: [
     'pages/login/login',
     'pages/index/index',
+    'pages/chatRoom/chatRoom',
+    'pages/offerPrice/offerPrice',
     'pages/news/news',
     'pages/message/message',
     'pages/my/my',
     'pages/goodDtl/goodDtl',
-    'pages/chatRoom/chatRoom',
     'pages/addGood/addGood',
     'pages/addGoodScs/addGoodScs',
     'pages/addNews/addNews',

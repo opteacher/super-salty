@@ -114,7 +114,7 @@ export class FormState {
         continue
       }
       if (rule.required) {
-        if (!value.length) {
+        if (!value || value.length === 0) {
           return [key, `${key} is required!`]
         }
       }
@@ -230,6 +230,46 @@ export async function callBackend (
   }
 }
 
+export async function uploadImage (callback?: (progress: number) => void): Promise<string> {
+  const res = await Taro.chooseImage({
+    count: 1
+  })
+  store.dispatch('showLoading', true)
+  return new Promise((resolve, reject) => {
+    const uploadTask = Taro.uploadFile({
+      url: `${bkHost}/super-salty/api/v1/file`,
+      filePath: res.tempFilePaths[0],
+      name: 'file',
+      success (res) {
+        const data = JSON.parse(res.data)
+        resolve(data.result)
+      },
+      fail: reject,
+      complete () {
+        store.dispatch('showLoading', false)
+      }
+    })
+    uploadTask.progress((res) => {
+      callback && callback(res.progress)
+      console.log('上传进度', res.progress)
+      console.log('已经上传的数据长度', res.totalBytesSent)
+      console.log('预期需要上传的数据总长度', res.totalBytesExpectedToSend)
+    })
+  })
+}
+
+export function isStartsWith (text: string, prefix: string): boolean {
+  return text.substring(0, prefix.length) === prefix
+}
+
+export function isEndsWith (text: string, suffix: string): boolean {
+  return text.substring(text.length - suffix.length) === suffix
+}
+
+export function rmvEndsOf (text: string, suffix: string): string {
+  const index = text.indexOf(suffix)
+  return index !== -1 ? text.substring(0, index) : text
+}
 export interface User {
   username: string
   phone: string

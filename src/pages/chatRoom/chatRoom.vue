@@ -7,7 +7,6 @@
       :title="good.name"
       extraText="More info"
       :thumb="good.cover"
-      style=""
     />
     <scroll-view id="pnlMessages" :scroll-y="true" :style="{
       'margin-top': '140rpx',
@@ -27,7 +26,9 @@
             <at-flex-item :size="10">
               <view class="msg-container">
                 <view class="msg-arrow" style="left: 6rpx"/>
-                <view class="msg-content ml-15">{{message.content}}</view>
+                <view class="msg-content ml-15">
+                  <msg-content :good="good" :content="message.content"/>
+                </view>
               </view>
               <view class="at-article__info m-0" style="float: right">
                 {{message.createdAt.toLocaleString()}}
@@ -46,7 +47,9 @@
             <at-flex-item :size="ldgMessage === index ? 9 : 10">
               <view class="msg-container">
                 <view class="msg-arrow" style="right: 6rpx"/>
-                <view class="msg-content mr-15">{{message.content}}</view>
+                <view class="msg-content mr-15">
+                  <msg-content :good="good" :content="message.content"/>
+                </view>
               </view>
               <view class="at-article__info m-0" style="float: left">
                 {{message.createdAt.toLocaleString()}}
@@ -80,20 +83,23 @@
           <at-fab
             class="toolbox-btn" size="small"
             :class="{'toolbox-btn__unact': !operVisible}"
-            @click="operVisible = !operVisible"
+            @click="onToolboxClicked"
           >
-            <text class="at-fab__icon at-icon at-icon-add"></text>
+            <text class="at-fab__icon at-icon at-icon-add"/>
           </at-fab>
         </at-flex-item>
       </at-flex>
-      <view v-if="errMsgs.content !== ''" class="at-article__info err-msg" style="height: 5vw">
+      <view
+        v-if="errMsgs.content !== ''"
+        class="at-article__info err-msg"
+        style="height: 5vw"
+      >
         {{errMsgs.content}}
       </view>
       <at-accordion
         class="collapse-toolbox"
         :hasBorder="false"
         :open="operVisible"
-        :isAnimation="false"
       >
         <at-grid
           class="tools-grid"
@@ -110,19 +116,22 @@
 <script lang="ts">
 import { computed, defineComponent, reactive, Ref, ref, toRefs } from 'vue'
 import BasicLayout from '../../components/BasicLayout.vue'
+import MsgContent from '../../components/MsgContent.vue'
 import Taro from '@tarojs/taro'
-import { copyGood, FormState, Good, newGood, Message } from '../../commons'
+import { copyGood, FormState, Good, newGood, Message, uploadImage } from '../../commons'
 import { getIdenGood } from '../../api/good'
 import { useStore } from 'vuex'
 export default defineComponent({
   components: {
-    BasicLayout
+    BasicLayout,
+    MsgContent,
   },
   onShow () {
     this.refresh()
   },
   setup () {
     const store = useStore()
+    const queryParams = Taro.getCurrentInstance().router?.params || {}
     const good: Good = reactive(newGood())
     const formState = new FormState({
       content: { default: '', rule: { required: true } },
@@ -142,7 +151,7 @@ export default defineComponent({
           15 + (formState.errMsgs.content.length ? 5 : 0)
         }vw`
       }),
-      ldgMessage: -1
+      ldgMessage: -1,
     })
     const toolBox = [
       {
@@ -169,20 +178,28 @@ export default defineComponent({
       }
     ]
     const messages: Ref<Message[]> = ref([])
+    if (queryParams.message) {
+      messages.value.push({
+        content: queryParams.message,
+        sender: 'buyer',
+        good,
+        buyer: store.getters.loginedUser,
+        createdAt: new Date()
+      })
+    }
 
     setInterval(() => {
       messages.value.push({
         content: 'aslksdlfksmdlfksdlkfsdlkfmlsdkmf',
         sender: 'seller',
         good,
-        buyer:  store.getters.loginedUser,
+        buyer: store.getters.loginedUser,
         createdAt: new Date()
       })
       scrollToEnd()
-    }, 10000)
+    }, 30000)
 
     async function refresh () {
-      const queryParams = Taro.getCurrentInstance().router?.params || {}
       if (!queryParams.gid) {
         Taro.navigateBack({ delta: 1 })
         return
@@ -194,14 +211,10 @@ export default defineComponent({
         .createSelectorQuery()
         .select('#pnlMessages')
         .fields({ scrollOffset: true }, fields => {
-          console.log(fields)
           Taro.pageScrollTo({
             selector: '#pnlMessages',
             scrollTop: fields.scrollHeight,
             duration: 300,
-            success: res => {
-              console.log(res)
-            }
           })
         })
         .exec()
@@ -235,11 +248,34 @@ export default defineComponent({
       const callback = toolBox[index].callback
       callback && callback()
     }
-    function ChoosePicture () {
+    async function ChoosePicture () {
       console.log('Choose a picture')
+      const imgURL = await uploadImage()
+      messages.value.push({
+        content: imgURL + '#image',
+        sender: 'buyer',
+        good,
+        buyer: store.getters.loginedUser,
+        createdAt: new Date()
+      })
+      Taro.nextTick(scrollToEnd)
     }
     function RequirePrice () {
       console.log('Require a price')
+      const params = [
+        `gid=${queryParams.gid}`,
+        `price=${good.price}`,
+        `unit=${good.unit}`,
+      ].join('&')
+      Taro.navigateTo({
+        url: `../../pages/offerPrice/offerPrice?${params}`
+      })
+    }
+    function onToolboxClicked () {
+      optionState.operVisible = !optionState.operVisible
+      if (optionState.operVisible) {
+        scrollToEnd()
+      }
     }
     return {
       good,
@@ -250,7 +286,8 @@ export default defineComponent({
 
       refresh,
       onMsgSubmitted,
-      onToolClicked
+      onToolClicked,
+      onToolboxClicked,
     }
   }
 })
