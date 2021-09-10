@@ -10,7 +10,7 @@
 import { defineComponent, ref } from 'vue'
 import MsgItem from '../../components/MsgItem'
 import BasicLayout from '../../components/BasicLayout'
-import { getAllMessages } from '../../api/message'
+import { getAllMessages } from '../../api'
 
 export default defineComponent({
   name: 'message',

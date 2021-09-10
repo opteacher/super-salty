@@ -1,6 +1,5 @@
 import { createStore } from 'vuex'
 import { callBackend } from './commons'
-import { omit } from 'lodash'
 
 const state = {
   loading: false,

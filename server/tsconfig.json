@@ -24,30 +24,19 @@
     // 解析非相对模块名的基准目录
     "baseUrl": ".",
     // 要包含的类型声明文件名列表
-    "types": [
-      "node"
-    ],
+    "types": ["node", "jest"],
     // TS文件编译后会放入到此文件夹内
     "outDir": "dist",
     // 模块名到基于 baseUrl的路径映射的列表
     "paths": {
-      "*": [
-        "node_modules/*",
-        "types/*"
-      ]
+      "*": ["node_modules/*", "types/*"],
+      "@": ["./dist/*"]
     },
     // 编译过程中需要引入的库文件的列表
-    "lib": [
-      "esnext"
-    ]
+    "lib": ["esnext"]
   },
   // 包含文件
-  "include": [
-    "./**/*.ts",
-    "./**/*.tsx"
-  ],
+  "include": ["./**/*.ts", "./**/*.tsx"],
   // 排除文件
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules", "./tests", "./lib/tests"]
 }

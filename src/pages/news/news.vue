@@ -25,7 +25,7 @@
 import { defineComponent, ref } from 'vue'
 import NewsItem from '../../components/NewsItem'
 import BasicLayout from '../../components/BasicLayout'
-import { getAllNews } from '../../api/news'
+import { getAllNews } from '../../api'
 import Taro from '@tarojs/taro'
 
 export default defineComponent({

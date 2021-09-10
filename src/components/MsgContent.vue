@@ -16,15 +16,17 @@
       :extraText="`${ofPrice.price} ${good.unit}`"
       :thumb="good.cover"
     />
-    <at-divider :height="50" lineColor="#78A4FA"/>
-    <at-button
-      class="mr-0"
-      type="primary"
-      :active="true"
-      size="small"
-      style="width: 200rpx"
-      @click="onOrderSubmit"
-    >Accept</at-button>
+    <template v-if="good.owner">
+      <at-divider :height="50" lineColor="#78A4FA"/>
+      <at-button
+        class="mr-0"
+        type="primary"
+        :active="true"
+        size="small"
+        style="width: 200rpx"
+        @click="onOrderSubmit"
+      >Accept</at-button>
+    </template>
   </view>
   <text v-else>{{content}}</text>
 </template>
@@ -35,8 +37,10 @@ import { computed, defineComponent } from 'vue'
 import { useStore } from 'vuex'
 export default defineComponent({
   props: {
+    senderId: { type: String, required: true },
     content: { type: String, default: '' },
-    good: { type: Object, required: true }
+    good: { type: Object, required: true },
+    orderConfirmed: { type: Function, required: true },
   },
   setup (props) {
     const store = useStore()
@@ -55,7 +59,7 @@ export default defineComponent({
       store.dispatch('showConfirm', {
         content: 'Are you sure? This operation will generate an order',
         confirmed: () => {
-          console.log('asdfdsfsdfsdfsdfsdf')
+          props.orderConfirmed(ofPrice.value.price)
         }
       })
     }

@@ -11,7 +11,8 @@
     "lint": "tsc --noEmit && eslint \"**/*.{js,ts}\" --quiet --fix",
     "start:dev": "tsc && cd dist && cross-env ENV=dev node app.js",
     "start:prod": "tsc && cd dist && cross-env ENV=prod node app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "cross-env ENV=dev jest",
+    "test-c": "cross-env ENV=dev jest --coverage"
   },
   "author": "",
   "license": "ISC",
@@ -29,11 +30,13 @@
     "mongoose": "^5.12.11",
     "mysql2": "^2.2.5",
     "qiniu": "^7.3.3",
+    "redis": "^4.0.0-rc.1",
     "sequelize": "^4.38.0",
     "toml": "^3.0.0",
     "uuid": "^8.3.2"
   },
   "devDependencies": {
+    "@types/jest": "^27.0.1",
     "@types/jsonwebtoken": "^8.5.5",
     "@types/koa": "^2.13.4",
     "@types/koa-json": "^2.0.20",
@@ -47,6 +50,8 @@
     "babel-preset-env": "^1.7.0",
     "cross-env": "^7.0.3",
     "eslint": "^7.32.0",
+    "jest": "^27.1.1",
+    "ts-jest": "^27.0.5",
     "typescript": "^4.4.2"
   }
 }

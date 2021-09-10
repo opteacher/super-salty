@@ -32,7 +32,7 @@ import GoodItem from '../../components/GoodItem.vue'
 import Taro from '@tarojs/taro'
 import BasicLayout from '../../components/BasicLayout.vue'
 import { Good } from '../../commons'
-import { getAllGoods } from '../../api/good'
+import { getAllGoods } from '../../api'
 
 export default defineComponent({
   name: 'home',

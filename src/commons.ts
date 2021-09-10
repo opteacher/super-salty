@@ -1,6 +1,6 @@
 import store from './store'
 import Taro from '@tarojs/taro'
-import { reactive, Ref, ref } from 'vue'
+import { reactive, ref } from 'vue'
 
 export const bkHost = process.env.NODE_ENV === 'production' ? '' : 'http://127.0.0.1:4000'
 
@@ -270,20 +270,33 @@ export function rmvEndsOf (text: string, suffix: string): string {
   const index = text.indexOf(suffix)
   return index !== -1 ? text.substring(0, index) : text
 }
-export interface User {
+
+interface BasicIndex {
+  _index?: string
+}
+export interface User extends BasicIndex {
   username: string
   phone: string
   avatar: string
 }
 
+export function newUser (): User {
+  return {
+    username: '',
+    phone: '',
+    avatar: 'http://cdn.opteacher.top/super-salty/assets/images/my_light.png',
+  }
+}
+
 export function copyUser (src: any, tgt: User): User {
+  tgt._index = src._index
   tgt.avatar = src.avatar
   tgt.phone = src.phone
   tgt.username = src.username
   return tgt
 }
 
-export interface Good {
+export interface Good extends BasicIndex {
   owner: User
   cover: string
   name: string
@@ -318,6 +331,7 @@ export function newGood (): Good {
 }
 
 export function copyGood (src: any, tgt: Good): Good {
+  tgt._index = src._index
   copyUser(src.owner, tgt.owner)
   tgt.cover = src.cover
   tgt.name = src.name
@@ -332,19 +346,56 @@ export function copyGood (src: any, tgt: Good): Good {
   return tgt
 }
 
-export interface Message {
+export interface Message extends BasicIndex {
+  topic: string
   content: string
-  sender: string // seller/buyer
-  good: Good
-  buyer: User
-  createdAt: Date
+  sender: User
+  createdAt?: Date
 }
 
-export function copyMessage (src: any, tgt: Message): Message {
+export function newMessage (): Message {
+  return {
+    topic: '',
+    content: '',
+    sender: {
+      phone: '',
+      username: '',
+      avatar: '',
+    }
+  }
+}
+
+export function copyMessage (src: any, tgt?: Message): Message {
+  tgt = tgt || newMessage()
+  tgt._index = src._index
+  copyUser(src.sender, tgt.sender)
+  tgt.topic = src.topic
+  tgt.content = src.content
+  tgt.createdAt = src.createdAt
+  return tgt
+}
+
+export type OrderStatus = 'WaitForSend' | 'Sending' | 'WaitForReceive' | 'Received' | 'WaitForEvaluate' | 'Returned' | 'Closed'
+export interface Order extends BasicIndex {
+  price: number
+  tags?: string[]
+  good: Good
+  buyer: User
+  status: OrderStatus
+  delivery?: string
+  createdAt?: Date
+  updatedAt?: Date
+}
+
+export function copyOrder (src: any, tgt: Order): Order {
+  tgt._index = src._index
   copyGood(src.good, tgt.good)
   copyUser(src.buyer, tgt.buyer)
-  tgt.content = src.content
-  tgt.sender = src.sender
+  tgt.price = src.price
+  tgt.tags = src.tags
+  tgt.status = src.status
+  tgt.delivery = src.delivery
   tgt.createdAt = src.createdAt
+  tgt.updatedAt = src.updatedAt
   return tgt
 }

@@ -13,7 +13,7 @@ mongoose.Promise = global.Promise
 // @type:class
 // @description:常量：
 //  * *Types*[`object`]：可用列类型
-export default class Mongo implements com.DB {
+export default class Mongo implements com.DataBase {
   protected config: any
   private static models: Map<string, com.MdlInf> = new Map<string, com.MdlInf>([])
 
@@ -145,10 +145,28 @@ export default class Mongo implements com.DB {
     return ret
   }
 
-  private cvtIdToIdx (res: any): any {
-    const ret = res.toObject()
+  cvtIdToIdx (self: Mongo, res: any): any {
+    const ret = res.toObject ? res.toObject() : res
+    if (!ret._id) {
+      return ret
+    }
     ret._index = ret._id
     delete ret._id
+    for (const [key, val] of Object.entries(ret)) {
+      if (key === '_index' || key === '_v') {
+        continue
+      }
+      if (typeof val === 'object') {
+        if (Array.isArray(val)) {
+          for (let i = 0; i < val.length; ++i) {
+            val[i] = self.cvtIdToIdx(self, val[i])
+          }
+          ret[key] = val
+        } else {
+          ret[key] = self.cvtIdToIdx(self, val)
+        }
+      }
+    }
     return ret
   }
 
@@ -200,7 +218,7 @@ export default class Mongo implements com.DB {
         res = res.populate(prop)
       }
     }
-    return res.exec().then(ress => Promise.resolve(ress.map(this.cvtIdToIdx)))
+    return res.exec().then(ress => Promise.resolve(ress.map(res => this.cvtIdToIdx(this, res))))
   }
 
   async save(model: com.Model, values: object, condition?: any, options?: com.SaveOptions): Promise<any> {
@@ -222,7 +240,7 @@ export default class Mongo implements com.DB {
     }
 
     if (!ress || !ress.length) {
-      return mgModel.create(values).then(res => Promise.resolve([this.cvtIdToIdx(res)]))
+      return mgModel.create(values).then(res => Promise.resolve([this.cvtIdToIdx(this, res)]))
     }
 
     const pmss: Promise<any>[] = []
@@ -252,7 +270,7 @@ export default class Mongo implements com.DB {
       }
       pmss.push(res.save())
     }
-    return Promise.all(pmss.map(pms => pms.then(res => Promise.resolve(this.cvtIdToIdx(res)))))
+    return Promise.all(pmss.map(pms => pms.then(res => Promise.resolve(this.cvtIdToIdx(this, res)))))
   }
 
   delete(model: com.Model, condition?: any, options?: com.DeleteOptions): Promise<number> {

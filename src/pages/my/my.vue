@@ -42,7 +42,7 @@
 
 <script>
 import { defineComponent, ref } from 'vue'
-import { getAllGoods } from '../../api/good'
+import { getAllGoods } from '../../api'
 import GoodCard from '../../components/GoodCard.vue'
 import BasicLayout from '../../components/BasicLayout'
 

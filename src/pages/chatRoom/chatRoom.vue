@@ -14,20 +14,24 @@
     }">
       <view class="p-20">
         <template v-for="(message, index) in messages" :key="index">
-          <!-- owner's messages -->
+          <!-- his/her messages -->
           <at-flex
-            v-if="message.sender === 'seller'"
+            v-if="message.sender._index !== lgnUsr._index"
             :class="{'mb-40': index !== messages.length - 1}"
             justify="around"
           >
             <at-flex-item :size="2">
-              <at-avatar class="msg-avatar" circle :image="message.good.owner.avatar"/>
+              <at-avatar class="msg-avatar" circle :image="message.sender.avatar"/>
             </at-flex-item>
             <at-flex-item :size="10">
               <view class="msg-container">
                 <view class="msg-arrow" style="left: 6rpx"/>
                 <view class="msg-content ml-15">
-                  <msg-content :good="good" :content="message.content"/>
+                  <msg-content
+                    :good="good"
+                    :content="message.content"
+                    :orderConfirmed="onOrderConfirmed"
+                  />
                 </view>
               </view>
               <view class="at-article__info m-0" style="float: right">
@@ -37,7 +41,7 @@
           </at-flex>
           <!-- my messages -->
           <at-flex
-            v-else-if="message.sender === 'buyer'"
+            v-else
             :class="{'mb-40': index !== messages.length - 1}"
             justify="around"
           >
@@ -48,7 +52,11 @@
               <view class="msg-container">
                 <view class="msg-arrow" style="right: 6rpx"/>
                 <view class="msg-content mr-15">
-                  <msg-content :good="good" :content="message.content"/>
+                  <msg-content
+                    :good="good"
+                    :content="message.content"
+                    :orderConfirmed="onOrderConfirmed"
+                  />
                 </view>
               </view>
               <view class="at-article__info m-0" style="float: left">
@@ -56,7 +64,7 @@
               </view>
             </at-flex-item>
             <at-flex-item :size="2">
-              <at-avatar class="msg-avatar" circle :image="message.good.owner.avatar"/>
+              <at-avatar class="msg-avatar" circle :image="message.sender.avatar"/>
             </at-flex-item>
           </at-flex>
         </template>
@@ -118,8 +126,8 @@ import { computed, defineComponent, reactive, Ref, ref, toRefs } from 'vue'
 import BasicLayout from '../../components/BasicLayout.vue'
 import MsgContent from '../../components/MsgContent.vue'
 import Taro from '@tarojs/taro'
-import { copyGood, FormState, Good, newGood, Message, uploadImage } from '../../commons'
-import { getIdenGood } from '../../api/good'
+import { copyGood, FormState, Good, newGood, uploadImage, copyUser, User, newUser, Message, copyMessage } from '../../commons'
+import { getIdenGood, genNewOrder, getUserByIdx } from '../../api'
 import { useStore } from 'vuex'
 export default defineComponent({
   components: {
@@ -131,12 +139,18 @@ export default defineComponent({
   },
   setup () {
     const store = useStore()
-    const queryParams = Taro.getCurrentInstance().router?.params || {}
+    const lgnUsr = store.getters.loginedUser
+    const qryPam = Taro.getCurrentInstance().router?.params || {}
+
     const good: Good = reactive(newGood())
+    const buyer: User = reactive(newUser())
     const formState = new FormState({
+      topic: { default: `${qryPam.gid}.${qryPam.bid}` },
       content: { default: '', rule: { required: true } },
+      sender: { default: lgnUsr._index }
     }, 'content')
     const optionState = reactive({
+      lgnUsr,
       operVisible: false,
       owner: computed(() => {
         return good.owner ? good.owner.username || good.owner.phone : ''
@@ -178,33 +192,40 @@ export default defineComponent({
       }
     ]
     const messages: Ref<Message[]> = ref([])
-    if (queryParams.message) {
-      messages.value.push({
-        content: queryParams.message,
-        sender: 'buyer',
-        good,
-        buyer: store.getters.loginedUser,
-        createdAt: new Date()
-      })
-    }
+    // @_@: 测试用
+    // if (queryParams.message) {
+    //   messages.value.push({
+    //     content: queryParams.message,
+    //     sender: 'buyer',
+    //     good,
+    //     buyer: lgnUsr.value,
+    //     createdAt: new Date()
+    //   })
+    // }
 
-    setInterval(() => {
-      messages.value.push({
-        content: 'aslksdlfksmdlfksdlkfsdlkfmlsdkmf',
-        sender: 'seller',
-        good,
-        buyer: store.getters.loginedUser,
-        createdAt: new Date()
-      })
-      scrollToEnd()
-    }, 30000)
+    // setInterval(() => {
+    //   messages.value.push({
+    //     content: 'aslksdlfksmdlfksdlkfsdlkfmlsdkmf',
+    //     sender: 'seller',
+    //     good,
+    //     buyer: lgnUsr.value,
+    //     createdAt: new Date()
+    //   })
+    //   scrollToEnd()
+    // }, 30000)
+    // @_@: 测试用
 
     async function refresh () {
-      if (!queryParams.gid) {
+      if (!qryPam.gid) {
         Taro.navigateBack({ delta: 1 })
         return
       }
-      copyGood(await getIdenGood(queryParams.gid), good)
+      copyGood(await getIdenGood(qryPam.gid), good)
+      if (!qryPam.bid) {
+        Taro.navigateBack({ delta: 1 })
+        return
+      }
+      copyUser(await getUserByIdx(qryPam.bid), buyer)
     }
     function scrollToEnd () {
       Taro
@@ -224,13 +245,7 @@ export default defineComponent({
       if (chkRes[0].length) {
         formState.errMsgs[chkRes[0]] = chkRes[1]
       } else {
-        messages.value.push({
-          content: formState.form.content,
-          sender: 'buyer',
-          good,
-          buyer: store.getters.loginedUser,
-          createdAt: new Date()
-        })
+        messages.value.push(copyMessage(formState.form))
         formState.form.content = ''
         optionState.ldgMessage = messages.value.length - 1
         setTimeout(() => {
@@ -251,19 +266,16 @@ export default defineComponent({
     async function ChoosePicture () {
       console.log('Choose a picture')
       const imgURL = await uploadImage()
-      messages.value.push({
-        content: imgURL + '#image',
-        sender: 'buyer',
-        good,
-        buyer: store.getters.loginedUser,
-        createdAt: new Date()
-      })
+      const message = copyMessage(formState.form)
+      message.content = imgURL + '#image'
+      messages.value.push(message)
       Taro.nextTick(scrollToEnd)
     }
     function RequirePrice () {
       console.log('Require a price')
       const params = [
-        `gid=${queryParams.gid}`,
+        `gid=${qryPam.gid}`,
+        `sender=${good.owner.phone === lgnUsr.value.phone ? 'seller' : 'buyer'}`,
         `price=${good.price}`,
         `unit=${good.unit}`,
       ].join('&')
@@ -277,6 +289,14 @@ export default defineComponent({
         scrollToEnd()
       }
     }
+    async function onOrderConfirmed (finPrice: number) {
+      console.log(await genNewOrder({
+        price: finPrice,
+        good: good._index,
+        buyer: lgnUsr._index,
+        status: 'WaitForSend',
+      }))
+    }
     return {
       good,
       toolBox,
@@ -288,6 +308,7 @@ export default defineComponent({
       onMsgSubmitted,
       onToolClicked,
       onToolboxClicked,
+      onOrderConfirmed,
     }
   }
 })

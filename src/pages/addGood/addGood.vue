@@ -140,7 +140,7 @@ import { defineComponent, reactive, toRefs } from 'vue'
 import BasicLayout from '../../components/BasicLayout.vue'
 import { FormState } from '../../commons'
 import UpldImgBtn from '../../components/UpldImgBtn.vue'
-import { addNewGood } from '../../api/good'
+import { addNewGood } from '../../api'
 import Taro from '@tarojs/taro'
 import { useStore } from 'vuex'
 

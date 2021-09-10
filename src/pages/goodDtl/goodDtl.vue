@@ -55,7 +55,7 @@
     <view class="fix-bottom p-0" v-if="!review">
       <at-flex justify="around" align="center">
         <at-flex-item :size="3">
-          <view hover-class="click-bkgd" class="oper-link right-border">
+          <view :hover-class="{'click-bkgd': !isOwner}" class="oper-link right-border">
             <at-icon value="heart" size="25" color="#A8C6DF"/>
             <text class="inner-text">&nbsp;Like</text>
           </view>
@@ -67,8 +67,11 @@
           </view>
         </at-flex-item>
         <at-flex-item :size="6" style="padding: 20rpx 20rpx 20rpx 0">
-          <at-button type="primary" @click="onToChatClicked">
+          <at-button v-if="!isOwner" type="primary" @click="onToChatClicked">
             <at-icon value="message" size="30"/>&nbsp;Chat now
+          </at-button>
+          <at-button v-else type="primary" @click="onToEditClicked">
+            <at-icon value="settings" size="30"/>&nbsp;Go To Edit
           </at-button>
         </at-flex-item>
       </at-flex>
@@ -77,11 +80,12 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, reactive } from 'vue'
+import { computed, defineComponent, reactive } from 'vue'
 import BasicLayout from '../../components/BasicLayout.vue'
 import Taro from '@tarojs/taro'
 import { copyGood, Good, newGood } from '../../commons'
-import { getIdenGood } from '../../api/good'
+import { getIdenGood } from '../../api'
+import { useStore } from 'vuex'
 
 export default defineComponent({
   name: 'goodDetail',
@@ -92,8 +96,11 @@ export default defineComponent({
     this.refresh()
   },
   setup() {
+    const store = useStore()
     const good: Good = reactive(newGood())
     const queryParams = Taro.getCurrentInstance().router?.params || {}
+    const lgnUsrIdx = store.getters.loginedUser._index
+    const isOwner = computed(() => good.owner._index === lgnUsrIdx)
 
     async function refresh () {
       if (queryParams.gid) {
@@ -108,15 +115,20 @@ export default defineComponent({
     }
     function onToChatClicked () {
       Taro.navigateTo({
-        url: `../../pages/chatRoom/chatRoom?gid=${queryParams.gid}`
+        url: `../../pages/chatRoom/chatRoom?gid=${queryParams.gid}&bid=${lgnUsrIdx}`
       })
+    }
+    function onToEditClicked () {
+
     }
     return {
       good,
+      isOwner,
       review: queryParams.review,
 
       refresh,
-      onToChatClicked
+      onToChatClicked,
+      onToEditClicked
     }
   }
 })

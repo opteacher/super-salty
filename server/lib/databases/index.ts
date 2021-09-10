@@ -1,5 +1,6 @@
 import Sequelize from 'sequelize'
 import mongoose from 'mongoose'
+import { RedisClientType } from 'redis/dist/lib/client'
 
 export type Middle = 'select' | 'create' | 'update' | 'save' | 'delete' | 'valid'
 export type Process = 'before' | 'doing' | 'after'
@@ -44,7 +45,7 @@ export interface IndexStruct {
 }
 
 export type Model = Sequelize.Model<any, any> | mongoose.Model<any>
-export type Conn = Sequelize.Sequelize | mongoose.Mongoose
+export type Conn = Sequelize.Sequelize | mongoose.Mongoose | RedisClientType<any, any>
 
 export interface MdlInf {
   model: Model
@@ -57,7 +58,7 @@ export interface TypeMapper {
   [tname: string]: any
 }
 
-export interface DB {
+export interface DataBase {
   get PropTypes (): TypeMapper
   get modelInfors (): Map<string, MdlInf>
   connect (): Promise<Conn>
@@ -68,4 +69,25 @@ export interface DB {
   delete (model: Model, condition?: any, options?: DeleteOptions): Promise<number>
   sync (model: Model): Promise<void>
   dump (model: Model, flPath: string): Promise<number>
+}
+
+export interface SetOptions {
+  expSeconds?: number
+}
+
+export interface Cache {
+  connect (): Promise<Conn>
+  use (db: string): Promise<void>
+  has (key: string): Promise<boolean>
+  get (key: string): Promise<any>
+  set (key: string, value: any, options?: SetOptions): Promise<any>
+  len (): Promise<number>
+}
+
+export interface DataWatcher {
+  createTopic (topic: string): Promise<any>
+  subscribe (topic: string, callback: (msg: string) => void): Promise<any>
+  unsubscribe (topic: string): Promise<any>
+  publish (topic: string, message: string): Promise<any>
+  listSubs (topic: string): Promise<Array<any>>
 }
