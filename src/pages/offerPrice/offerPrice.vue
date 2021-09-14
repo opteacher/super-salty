@@ -5,7 +5,7 @@
       type="number"
       :focus="focusComp === 'price'"
       :value="form.price"
-      :placeholder="orgPrice"
+      :placeholder="orgPrice.toString()"
       @change="val => { form.price = onFieldChanged('price', val) }"
     >
       <text>{{unit}}</text>
@@ -32,15 +32,19 @@
 import { defineComponent, reactive, toRefs } from 'vue'
 import Taro from '@tarojs/taro'
 import { FormState } from '../../commons'
+import { addMessage } from '../../api'
+import { useStore } from 'vuex'
 
 export default defineComponent({
   name: 'OfferPrice',
   setup () {
+    const store = useStore()
+    const lgnUsr = store.getters.loginedUser
     const params = Taro.getCurrentInstance().router?.params
     const orgPrice = parseFloat(params?.price || '0')
     const freeDlv = params?.freeDlv ? JSON.parse(params?.freeDlv) : false
     const formState = new FormState({
-      price: { default: orgPrice, rule: { required: true, pattern: /^(\d+)(.\d{1,2})?$/ } },
+      price: { default: orgPrice.toString(), rule: { required: true, pattern: /^(\d+)(.\d{1,2})?$/ } },
       freeDlv: { default: freeDlv }
     }, 'price')
     const optionState = reactive({
@@ -48,15 +52,18 @@ export default defineComponent({
       unit: params?.unit || '￥'
     })
 
-    function onPriceSubmit () {
+    async function onPriceSubmit () {
       const chkRes = formState.validateForm()
       if (chkRes[0].length) {
         formState.errMsgs[chkRes[0]] = chkRes[1]
       } else {
-        const message = JSON.stringify(formState.form) + '#offerPrice'
-        Taro.navigateTo({
-          url: `../../pages/chatRoom/chatRoom?gid=${params?.gid}&message=${message}`
+        await addMessage({
+          topic: params?.topic,
+          content: JSON.stringify(formState.form) + '#offerPrice',
+          sender: lgnUsr._index,
+          createdAt: new Date()
         })
+        Taro.navigateBack({ delta: 1 })
       }
     }
     return {

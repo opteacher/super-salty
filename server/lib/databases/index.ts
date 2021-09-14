@@ -44,7 +44,11 @@ export interface IndexStruct {
   [prop: string]: any
 }
 
-export type Model = Sequelize.Model<any, any> | mongoose.Model<any>
+export interface NamedStruct extends IndexStruct {
+  modelName: string
+}
+
+export type Model = Sequelize.Model<any, any> | mongoose.Model<any> | null
 export type Conn = Sequelize.Sequelize | mongoose.Mongoose | RedisClientType<any, any>
 
 export interface MdlInf {
@@ -63,15 +67,23 @@ export interface DataBase {
   get modelInfors (): Map<string, MdlInf>
   connect (): Promise<Conn>
   genPreRoutes (): void
+  useDataBase (dbName: string): Promise<boolean>
   defineModel (modelName: string, struct: IndexStruct, options?: DefineOptions): MdlInf
-  select (model: Model, condition?: any, options?: SelectOptions): Promise<any>
-  save (model: Model, values: object, condition?: any, options?: SaveOptions): Promise<any>
-  delete (model: Model, condition?: any, options?: DeleteOptions): Promise<number>
-  sync (model: Model): Promise<void>
-  dump (model: Model, flPath: string): Promise<number>
+  select (mdlInf: MdlInf, condition?: any, options?: SelectOptions): Promise<any>
+  save (mdlInf: MdlInf, values: any, condition?: any, options?: SaveOptions): Promise<any>
+  delete (mdlInf: MdlInf, condition?: any, options?: DeleteOptions): Promise<number>
+  sync (mdlInf: MdlInf): Promise<void>
+  dump (mdlInf: MdlInf, flPath: string): Promise<number>
 }
 
-export interface SetOptions {
+export interface OperOptions {
+  operType?: string
+}
+
+export interface GetOptions extends OperOptions{
+}
+
+export interface SetOptions extends OperOptions {
   expSeconds?: number
 }
 
@@ -79,7 +91,7 @@ export interface Cache {
   connect (): Promise<Conn>
   use (db: string): Promise<void>
   has (key: string): Promise<boolean>
-  get (key: string): Promise<any>
+  get (key: string, params?: any[], options?: GetOptions): Promise<any>
   set (key: string, value: any, options?: SetOptions): Promise<any>
   len (): Promise<number>
 }

@@ -15,7 +15,7 @@ mongoose.Promise = global.Promise
 //  * *Types*[`object`]：可用列类型
 export default class Mongo implements com.DataBase {
   protected config: any
-  private static models: Map<string, com.MdlInf> = new Map<string, com.MdlInf>([])
+  private static modelInfos: Map<string, com.MdlInf> = new Map<string, com.MdlInf>([])
 
   static readonly Types = {
     Id: mongoose.Schema.Types.ObjectId,
@@ -45,7 +45,7 @@ export default class Mongo implements com.DataBase {
   }
 
   get modelInfors (): Map<string, com.MdlInf> {
-    return Mongo.models
+    return Mongo.modelInfos
   }
 
   // @block{connect}:数据库连接方法
@@ -68,11 +68,11 @@ export default class Mongo implements com.DataBase {
   }
 
   genPreRoutes(): void {
-    for (const [mname, minfo] of Mongo.models) {
-      for (const [cname, prop] of this.getRefCollection(minfo.model)) {
+    for (const [mname, minfo] of Mongo.modelInfos) {
+      for (const [cname, prop] of this.getRefCollection(minfo)) {
         const prePath: [any, string] = [prop, `${mname}/:${mname}_index`]
-        if (!Mongo.models.has(cname)) { continue }
-        const tgtMdlInf = Mongo.models.get(cname)
+        if (!Mongo.modelInfos.has(cname)) { continue }
+        const tgtMdlInf = Mongo.modelInfos.get(cname)
         if (!tgtMdlInf) {
           continue
         }
@@ -83,6 +83,10 @@ export default class Mongo implements com.DataBase {
         }
       }
     }
+  }
+
+  useDataBase(dbName: string): Promise<boolean> {
+    return Promise.resolve(true)
   }
 
   defineModel (modelName: string, struct: com.IndexStruct, options: com.DefineOptions = {
@@ -114,26 +118,18 @@ export default class Mongo implements com.DataBase {
       }
     }
 
-    const model: com.MdlInf = {
+    const mdlInf: com.MdlInf = {
       model: mongoose.model(modelName, schema),
       name: modelName,
       struct, options
     }
-    Mongo.models.set(modelName, model)
-    return model
+    Mongo.modelInfos.set(modelName, mdlInf)
+    return mdlInf
   }
 
-  private getRefCollection (model: com.Model): Map<string, any> {
+  private getRefCollection (mdlInf: com.MdlInf): Map<string, any> {
     const ret: Map<string, any> = new Map<string, any>([])
-    const mgModel = <mongoose.Model<any>>model
-    if (!Mongo.models.has(mgModel.modelName)) {
-      return ret
-    }
-    const minfo = Mongo.models.get(mgModel.modelName)
-    if (!minfo) {
-      return ret
-    }
-    for (const [pname, pattr] of Object.entries(minfo.struct)) {
+    for (const [pname, pattr] of Object.entries(mdlInf.struct)) {
       let ptype = pattr
       if (ptype instanceof Array) {
         ptype = ptype[0]
@@ -170,7 +166,7 @@ export default class Mongo implements com.DataBase {
     return ret
   }
 
-  async select(model: com.Model, condition?: any, options?: com.SelectOptions): Promise<any> {
+  async select(mdlInf: com.MdlInf, condition?: any, options?: com.SelectOptions): Promise<any> {
     options = Object.assign({
       selCols: [], rawQuery: false, ext: false
     }, options)
@@ -196,7 +192,7 @@ export default class Mongo implements com.DataBase {
       delete condition.limit
     }
 
-    const mgModel = <mongoose.Model<any>>model
+    const mgModel = mdlInf.model as mongoose.Model<any>
     const props: string[] = []
     mgModel.schema.eachPath((prop: string) => {
       props.push(prop)
@@ -206,7 +202,7 @@ export default class Mongo implements com.DataBase {
       selCols = options.selCols.join(' ')
     }
 
-    let res = <mongoose.Query<any[], any, {}, any>>model.find(condition, selCols)
+    let res = mgModel.find(condition, selCols) as mongoose.Query<any[], any, {}, any>
     if (order_by) {
       res = res.sort(order_by)
     }
@@ -214,15 +210,15 @@ export default class Mongo implements com.DataBase {
       res = res.limit(Number.parseInt(limit))
     }
     if (options.ext) {
-      for (const prop of this.getRefCollection(model)) {
+      for (const prop of this.getRefCollection(mdlInf)) {
         res = res.populate(prop)
       }
     }
     return res.exec().then(ress => Promise.resolve(ress.map(res => this.cvtIdToIdx(this, res))))
   }
 
-  async save(model: com.Model, values: object, condition?: any, options?: com.SaveOptions): Promise<any> {
-    const mgModel = <mongoose.Model<any>>model
+  async save(mdlInf: com.MdlInf, values: any, condition?: any, options?: com.SaveOptions): Promise<any> {
+    const mgModel = mdlInf.model as mongoose.Model<any>
 
     options = Object.assign({
       cvtId: true, updMode: 'cover'
@@ -273,8 +269,8 @@ export default class Mongo implements com.DataBase {
     return Promise.all(pmss.map(pms => pms.then(res => Promise.resolve(this.cvtIdToIdx(this, res)))))
   }
 
-  delete(model: com.Model, condition?: any, options?: com.DeleteOptions): Promise<number> {
-    const mgModel = <mongoose.Model<any>>model
+  delete(mdlInf: com.MdlInf, condition?: any, options?: com.DeleteOptions): Promise<number> {
+    const mgModel = mdlInf.model as mongoose.Model<any>
 
     if (condition && condition._index) {
       condition._id = condition._index
@@ -285,18 +281,18 @@ export default class Mongo implements com.DataBase {
       .then(res => Promise.resolve(res.deletedCount || 0))
   }
 
-  sync(model: com.Model): Promise<void> {
+  sync(mdlInf: com.MdlInf): Promise<void> {
     return this.connect().then(() => new Promise((res, rej) => {
-      (<mongoose.Model<any>>model).deleteMany({}, err => {
+      (mdlInf.model as mongoose.Model<any>).deleteMany({}, err => {
         err ? rej(err) : res()
       })
     }))
   }
 
-  async dump(model: com.Model, flPath: string): Promise<number> {
+  async dump(mdlInf: com.MdlInf, flPath: string): Promise<number> {
     const data = <any[]>require(flPath).data
     await this.connect()
-    await Promise.all(data.map(record => model.create(record)))
+    await Promise.all(data.map(record => mdlInf.model?.create(record)))
     return Promise.resolve(data.length)
   }
 }

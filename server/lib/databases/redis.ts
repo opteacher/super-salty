@@ -1,6 +1,6 @@
 import { createClient } from 'redis'
 import * as com from './index'
-import * as utils from '../utils/index'
+import * as utils from '../utils/index.js'
 import { RedisClientType } from 'redis/dist/lib/client'
 
 export default class Redis implements com.Cache, com.DataWatcher {
@@ -42,16 +42,28 @@ export default class Redis implements com.Cache, com.DataWatcher {
       .then(res => res?.valueOf() as boolean)
   }
 
-  get(key: string): Promise<any> {
+  get(key: string, params: any[] = [], options?: com.GetOptions): Promise<any> {
+    if (!options) {
+      options = {}
+    }
+    if (!options.operType) {
+      options.operType = 'hGetAll'
+    }
     return this.connect().then(this.cvtClient)
-      .then(client => client.hGetAll(key))
+      .then(client => client[options?.operType as string](key, ...params))
   }
 
   set(key: string, value: any, options?: com.SetOptions): Promise<any> {
+    if (!options) {
+      options = {}
+    }
+    if (!options.operType) {
+      options.operType = 'hSet'
+    }
     return this.connect().then(this.cvtClient)
       .then(client => Promise.all([
         Promise.resolve(client),
-        client.hSet(key, value)
+        client[options?.operType as string](key, value)
       ]))
       .then(res => {
         const client = res[0]
@@ -71,7 +83,11 @@ export default class Redis implements com.Cache, com.DataWatcher {
   createTopic (topic: string): Promise<any> {
     return this.connect().then(this.cvtClient)
       .then(client => client.duplicate())
-      .then(subscriber => subscriber.connect())
+      .then(subscriber => Promise.all([
+        Promise.resolve(subscriber),
+        subscriber.connect()
+      ]))
+      .then(res => res[0])
   }
 
   subscribe (topic: string, callback: (msg: string) => void): Promise<any> {

@@ -10,7 +10,7 @@ export default db.defineModel('message', {
 }, {
   middle: {
     create: {
-      before (doc) {
+      before (doc: any) {
         doc.createdAt = new Date()
       }
     }

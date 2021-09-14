@@ -1,5 +1,5 @@
 import { Context } from 'koa'
-import { Model } from '../lib/databases/index.js'
+import { MdlInf } from '../lib/databases/index.js'
 import crypto from 'crypto'
 import jwt from 'jsonwebtoken'
 import { v4 as uuidv4 } from 'uuid'
@@ -17,7 +17,7 @@ export enum RespCode {
   DB_OPER_FAILED,
 }
 
-export async function login (ctx: Context, model: Model, key: string): Promise<void> {
+export async function login (ctx: Context, model: MdlInf, key: string): Promise<void> {
   const reqBody = ctx.request.body
 
   const result = await db.select(model, {
@@ -88,7 +88,7 @@ export async function logstat (ctx: Context): Promise<void> {
   ctx.body = resBody
 }
 
-export async function regup (ctx: Context, model: Model, key: string): Promise<void> {
+export async function regup (ctx: Context, model: MdlInf, key: string): Promise<void> {
   const reqBody = ctx.request.body
 
   const stored = await db.select(model, {

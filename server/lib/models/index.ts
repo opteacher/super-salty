@@ -2,7 +2,7 @@ import _ from 'lodash'
 import Router from 'koa-router'
 import Path from 'path'
 import * as utils from '../utils/index.js'
-import { DB, MdlInf, Method } from '../databases/index.js'
+import { DataBase, MdlInf, Method } from '../databases/index.js'
 
 const router = new Router()
 
@@ -21,13 +21,13 @@ interface ModelMapper {
 export interface ModelExports {
   router: Router
   models: ModelMapper
-  db: DB
+  db: DataBase
 }
 
 export default async function (mdlsPath: string, dbCfgPath: string, mdlCfgPath: string): Promise<ModelExports> {
   const cfg: ModelConfig = utils.readConfig(mdlCfgPath)
   const ImplDb = (await import(`../databases/${cfg.type}.js`)).default
-  const db: DB = new ImplDb(dbCfgPath)
+  const db: DataBase = new ImplDb(dbCfgPath)
 
   // @block{modelRoutes}:模型生成路由
   // @includes:lodash
@@ -45,15 +45,15 @@ export default async function (mdlsPath: string, dbCfgPath: string, mdlCfgPath: 
   // @step{}:同步数据库
   const syncFunc = async () => {
     if (cfg.sync && Array.isArray(cfg.sync)) {
-      await Promise.all(cfg.sync.map((tname: string) => db.sync(models[tname].model)))
+      await Promise.all(cfg.sync.map((tname: string) => db.sync(models[tname])))
       console.log('数据库模型同步完毕')
     } else if (cfg.sync) {
-      await Promise.all(_.values(models).map(minfo => db.sync(minfo.model)))
+      await Promise.all(_.values(models).map(minfo => db.sync(minfo)))
       console.log('数据库模型同步完毕')
     }
     if (cfg.inits) {
       for (const [mname, initFile] of cfg.inits) {
-        const numIpt = await db.dump(models[mname].model, Path.resolve(initFile))
+        const numIpt = await db.dump(models[mname], Path.resolve(initFile))
         console.log(`从${initFile}文件内读取并导入了${numIpt}条记录到表${mname}中`)
       }
     }
@@ -90,7 +90,7 @@ export default async function (mdlsPath: string, dbCfgPath: string, mdlCfgPath: 
           // @steps{3_3_2_1}:*GET*：根据id查找，**会联表**
           router.get(GetUrl, async ctx => {
             ctx.body = {
-              data: (await db.select(minfo.model,
+              data: (await db.select(minfo,
                 { _index: ctx.params.index }, { ext: true }
               ))[0]
             }
@@ -102,7 +102,7 @@ export default async function (mdlsPath: string, dbCfgPath: string, mdlCfgPath: 
           // @steps{3_3_2_2}:*ALL*：查所有，**不会联表**
           router.get(AllUrl, async ctx => {
             ctx.body = {
-              data: await db.select(minfo.model, ctx.query)
+              data: await db.select(minfo, ctx.query)
             }
           })
           path = AllUrl
@@ -117,7 +117,7 @@ export default async function (mdlsPath: string, dbCfgPath: string, mdlCfgPath: 
           // @steps{3_3_2_3}:*POST*：**使用form表单提交**
           router.post(PostUrl, async ctx => {
             ctx.body = {
-              data: (await db.save(minfo.model, ctx.request.body))[0]
+              data: (await db.save(minfo, ctx.request.body))[0]
             }
           })
           console.log(`POST\t${PostUrl}`)
@@ -126,7 +126,7 @@ export default async function (mdlsPath: string, dbCfgPath: string, mdlCfgPath: 
           // @steps{3_3_2_4}:*PUT*：同POST
           router.put(PutUrl, async ctx => {
             ctx.body = {
-              data: (await db.save(minfo.model,
+              data: (await db.save(minfo,
                 ctx.request.body, { index: ctx.params.index }
               ))[0]
             }
@@ -141,7 +141,7 @@ export default async function (mdlsPath: string, dbCfgPath: string, mdlCfgPath: 
           // @steps{3_3_2_5}:*DELETE*：同GET
           router.delete(DelUrl, async ctx => {
             ctx.body = {
-              data: await db.delete(minfo.model, {
+              data: await db.delete(minfo, {
                 index: ctx.params.index
               })
             }
@@ -169,7 +169,7 @@ export default async function (mdlsPath: string, dbCfgPath: string, mdlCfgPath: 
             }
             const colNam = ary[0]
             const pamIdx = ary[1].slice(1)
-            const preMdl = models[colNam].model
+            const preMdl = models[colNam]
             const condition = { id: ctx.params[pamIdx] }
             ctx.body = {
               data: await db.save(preMdl, { [prop]: ctx.params.index }, condition, {

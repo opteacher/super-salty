@@ -16,7 +16,7 @@
         <template v-for="(message, index) in messages" :key="index">
           <!-- his/her messages -->
           <at-flex
-            v-if="message.sender._index !== lgnUsr._index"
+            v-if="message.sender !== lgnUsr._index"
             :class="{'mb-40': index !== messages.length - 1}"
             justify="around"
           >
@@ -28,7 +28,8 @@
                 <view class="msg-arrow" style="left: 6rpx"/>
                 <view class="msg-content ml-15">
                   <msg-content
-                    :good="good"
+                    :good="good" :topic="topic"
+                    :senderId="message.sender._index || message.sender"
                     :content="message.content"
                     :orderConfirmed="onOrderConfirmed"
                   />
@@ -53,7 +54,8 @@
                 <view class="msg-arrow" style="right: 6rpx"/>
                 <view class="msg-content mr-15">
                   <msg-content
-                    :good="good"
+                    :good="good" :topic="topic"
+                    :senderId="message.sender._index || message.sender"
                     :content="message.content"
                     :orderConfirmed="onOrderConfirmed"
                   />
@@ -122,12 +124,12 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, reactive, Ref, ref, toRefs } from 'vue'
+import { computed, defineComponent, reactive, Ref, ref, toRefs, onUnmounted } from 'vue'
 import BasicLayout from '../../components/BasicLayout.vue'
 import MsgContent from '../../components/MsgContent.vue'
 import Taro from '@tarojs/taro'
-import { copyGood, FormState, Good, newGood, uploadImage, copyUser, User, newUser, Message, copyMessage } from '../../commons'
-import { getIdenGood, genNewOrder, getUserByIdx } from '../../api'
+import { FormState, newGood, uploadImage, newUser, Message, copyMessage } from '../../commons'
+import { getIdenGood, genNewOrder, getUserByIdx, getAllMessages, addMessage } from '../../api'
 import { useStore } from 'vuex'
 export default defineComponent({
   components: {
@@ -135,28 +137,27 @@ export default defineComponent({
     MsgContent,
   },
   onShow () {
-    this.refresh()
+    this.init()
   },
   setup () {
     const store = useStore()
     const lgnUsr = store.getters.loginedUser
     const qryPam = Taro.getCurrentInstance().router?.params || {}
+    const topic = `${qryPam.gid}.${qryPam.bid}`
 
-    const good: Good = reactive(newGood())
-    const buyer: User = reactive(newUser())
+    const good = ref(newGood())
+    const buyer = ref(newUser())
     const formState = new FormState({
-      topic: { default: `${qryPam.gid}.${qryPam.bid}` },
+      topic: { default: topic },
       content: { default: '', rule: { required: true } },
       sender: { default: lgnUsr._index }
     }, 'content')
     const optionState = reactive({
       lgnUsr,
+      topic,
       operVisible: false,
-      owner: computed(() => {
-        return good.owner ? good.owner.username || good.owner.phone : ''
-      }),
       cost: computed(() => {
-        return good.price ? good.unit + good.price : ''
+        return good.value.price ? good.value.unit + good.value.price : ''
       }),
       msgPanelBtm: computed(() => {
         return optionState.operVisible ? `${
@@ -192,46 +193,40 @@ export default defineComponent({
       }
     ]
     const messages: Ref<Message[]> = ref([])
-    // @_@: 测试用
-    // if (queryParams.message) {
-    //   messages.value.push({
-    //     content: queryParams.message,
-    //     sender: 'buyer',
-    //     good,
-    //     buyer: lgnUsr.value,
-    //     createdAt: new Date()
-    //   })
-    // }
 
-    // setInterval(() => {
-    //   messages.value.push({
-    //     content: 'aslksdlfksmdlfksdlkfsdlkfmlsdkmf',
-    //     sender: 'seller',
-    //     good,
-    //     buyer: lgnUsr.value,
-    //     createdAt: new Date()
-    //   })
-    //   scrollToEnd()
-    // }, 30000)
-    // @_@: 测试用
+    const itvlHdl = setInterval(async () => {
+      await refresh()
+    }, 5000)
+    onUnmounted(() => {
+      clearInterval(itvlHdl)
+    })
 
-    async function refresh () {
+    async function init () {
       if (!qryPam.gid) {
         Taro.navigateBack({ delta: 1 })
         return
       }
-      copyGood(await getIdenGood(qryPam.gid), good)
+      good.value = await getIdenGood(qryPam.gid)
       if (!qryPam.bid) {
         Taro.navigateBack({ delta: 1 })
         return
       }
-      copyUser(await getUserByIdx(qryPam.bid), buyer)
+      buyer.value = await getUserByIdx(qryPam.bid)
+      await refresh()
+    }
+    async function refresh () {
+      messages.value = (await getAllMessages(topic))
+        .sort((m1, m2) => m1.createdAt > m2.createdAt ? 1 : -1)
+      Taro.nextTick(scrollToEnd)
     }
     function scrollToEnd () {
       Taro
         .createSelectorQuery()
         .select('#pnlMessages')
         .fields({ scrollOffset: true }, fields => {
+          if (!fields) {
+            return
+          }
           Taro.pageScrollTo({
             selector: '#pnlMessages',
             scrollTop: fields.scrollHeight,
@@ -240,22 +235,12 @@ export default defineComponent({
         })
         .exec()
     }
-    function onMsgSubmitted () {
+    async function onMsgSubmitted () {
       const chkRes = formState.validateForm()
       if (chkRes[0].length) {
         formState.errMsgs[chkRes[0]] = chkRes[1]
       } else {
-        messages.value.push(copyMessage(formState.form))
-        formState.form.content = ''
-        optionState.ldgMessage = messages.value.length - 1
-        setTimeout(() => {
-          optionState.ldgMessage = -1
-        }, 1000)
-        scrollToEnd()
-        // const good = await addNewGood(formState.form)
-        // Taro.navigateTo({
-        //   url: `../../pages/addGoodScs/addGoodScs?gid=${good._index}`
-        // })
+        await addMsgToBked()
       }
     }
     function onToolClicked (item: object, index: number): void {
@@ -266,18 +251,26 @@ export default defineComponent({
     async function ChoosePicture () {
       console.log('Choose a picture')
       const imgURL = await uploadImage()
+      await addMsgToBked(imgURL + '#image')
+    }
+    async function addMsgToBked (msgContent?: string) {
       const message = copyMessage(formState.form)
-      message.content = imgURL + '#image'
+      if (msgContent) {
+        message.content = msgContent
+      }
       messages.value.push(message)
+      formState.form.content = ''
+      optionState.ldgMessage = messages.value.length - 1
+      await addMessage(message)
+      optionState.ldgMessage = -1
       Taro.nextTick(scrollToEnd)
     }
     function RequirePrice () {
       console.log('Require a price')
       const params = [
-        `gid=${qryPam.gid}`,
-        `sender=${good.owner.phone === lgnUsr.value.phone ? 'seller' : 'buyer'}`,
-        `price=${good.price}`,
-        `unit=${good.unit}`,
+        `topic=${topic}`,
+        `price=${good.value.price}`,
+        `unit=${good.value.unit}`,
       ].join('&')
       Taro.navigateTo({
         url: `../../pages/offerPrice/offerPrice?${params}`
@@ -292,7 +285,7 @@ export default defineComponent({
     async function onOrderConfirmed (finPrice: number) {
       console.log(await genNewOrder({
         price: finPrice,
-        good: good._index,
+        good: good.value._index,
         buyer: lgnUsr._index,
         status: 'WaitForSend',
       }))
@@ -304,6 +297,7 @@ export default defineComponent({
       ...formState.toRefs(),
       ...toRefs(optionState),
 
+      init,
       refresh,
       onMsgSubmitted,
       onToolClicked,

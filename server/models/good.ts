@@ -19,7 +19,7 @@ export default db.defineModel('good', {
 }, {
   middle: {
     create: {
-      before (doc) {
+      before (doc: any) {
         if (!doc.createdAt) {
           doc.createdAt = new Date()
         }

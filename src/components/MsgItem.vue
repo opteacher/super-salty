@@ -1,24 +1,42 @@
 <template>
   <at-list-item
     class="message-item"
-    :thumb="message.user.avatar"
-    :title="message.user.name"
-    :note="message.content"
-    :extraText="message.createdAt"
+    :thumb="msgInf.other.avatar"
+    :title="msgInf.other.account"
+    :note="lastMsg.content"
+    :extraText="lastMsg.createdAt"
+    @click="onMsgItmClicked"
   />
 </template>
 
-<script>
-import { defineComponent, toRefs } from 'vue'
+<script lang="ts">
+import { computed, defineComponent, toRefs } from 'vue'
+import Taro from '@tarojs/taro'
 
 export default defineComponent({
   name: 'messageItem',
   props: {
-    message: { type: Object, required: true }
+    msgInf: { type: Object, required: true }
   },
   setup(props) {
+    const lastMsg = computed(() => {
+      if (props.msgInf.messages.length) {
+        return props.msgInf.messages[props.msgInf.messages.length - 1]
+      } else {
+        return { content: '', createdAt: '' }
+      }
+    })
+
+    function onMsgItmClicked () {
+      Taro.navigateTo({
+        url: `../chatRoom/chatRoom?gid=${props.msgInf.goodId}&bid=${props.msgInf.buyerId}`
+      })
+    }
     return {
-      ...toRefs(props)
+      lastMsg,
+      ...toRefs(props),
+
+      onMsgItmClicked
     }
   }
 })

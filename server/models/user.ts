@@ -12,7 +12,7 @@ export default db.defineModel('user', {
 }, {
   middle: {
     create: {
-      before (doc) {
+      before (doc: any) {
         if (doc.password.length !== 64) {
           doc.password = createHmac('sha256', svrCfg.secret)
             .update(doc.password).digest('hex')

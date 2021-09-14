@@ -179,14 +179,24 @@ export class FormState {
   }
 }
 
+export interface CallBkedOpns {
+  showLoading?: boolean
+  showTipText?: boolean
+}
+
 export async function callBackend (
   path: string,
   method: keyof Taro.request.method | undefined,
   params: any = {},
-  options: any = {},
+  options: CallBkedOpns = {
+    showLoading: true,
+    showTipText: true
+  },
   succeedMsg: string = 'Request succeed!'
 ) {
-  store.dispatch('showLoading', true)
+  if (options.showLoading) {
+    store.dispatch('showLoading', true)
+  }
   let error = {
     message: '', code: 200
   }
@@ -201,12 +211,17 @@ export async function callBackend (
     })
   } catch (err) {
     error.message = err.message || JSON.stringify(err)
-    Taro.atMessage({
-      message: error.message, type: 'error'
-    })
+    if (options.showTipText) {
+      Taro.atMessage({
+        message: error.message, type: 'error'
+      })
+    }
     return Promise.reject(error)
+  } finally {
+    if (options.showLoading) {
+      store.dispatch('showLoading', false)
+    }
   }
-  store.dispatch('showLoading', false)
   error.code = resp.statusCode
   if (!resp.data) {
     error.message = '返回体没有data字段！'
@@ -218,14 +233,18 @@ export async function callBackend (
     error = resp.data.error || resp.data
   }
   if (error.message.length) {
-    Taro.atMessage({
-      message: error.message, type: 'error'
-    })
+    if (options.showTipText) {
+      Taro.atMessage({
+        message: error.message, type: 'error'
+      })
+    }
     return Promise.reject(error)
   } else {
-    Taro.atMessage({
-      message: succeedMsg, type: 'success'
-    })
+    if (options.showTipText) {
+      Taro.atMessage({
+        message: succeedMsg, type: 'success'
+      })
+    }
     return Promise.resolve(resp.data.data || resp.data.result)
   }
 }
@@ -275,6 +294,7 @@ interface BasicIndex {
   _index?: string
 }
 export interface User extends BasicIndex {
+  account: string
   username: string
   phone: string
   avatar: string
@@ -282,17 +302,20 @@ export interface User extends BasicIndex {
 
 export function newUser (): User {
   return {
+    account: '',
     username: '',
     phone: '',
     avatar: 'http://cdn.opteacher.top/super-salty/assets/images/my_light.png',
   }
 }
 
-export function copyUser (src: any, tgt: User): User {
+export function copyUser (src: any, tgt?: User): User {
+  tgt = tgt || newUser()
   tgt._index = src._index
   tgt.avatar = src.avatar
   tgt.phone = src.phone
   tgt.username = src.username
+  tgt.account = src.username || src.phone
   return tgt
 }
 
@@ -312,11 +335,7 @@ export interface Good extends BasicIndex {
 
 export function newGood (): Good {
   return {
-    owner: {
-      username: '',
-      phone: '',
-      avatar: ''
-    },
+    owner: newUser(),
     cover: '',
     name: '',
     location: '',
@@ -330,7 +349,8 @@ export function newGood (): Good {
   }
 }
 
-export function copyGood (src: any, tgt: Good): Good {
+export function copyGood (src: any, tgt?: Good): Good {
+  tgt = tgt || newGood()
   tgt._index = src._index
   copyUser(src.owner, tgt.owner)
   tgt.cover = src.cover
@@ -357,21 +377,21 @@ export function newMessage (): Message {
   return {
     topic: '',
     content: '',
-    sender: {
-      phone: '',
-      username: '',
-      avatar: '',
-    }
+    sender: newUser()
   }
 }
 
 export function copyMessage (src: any, tgt?: Message): Message {
   tgt = tgt || newMessage()
-  tgt._index = src._index
-  copyUser(src.sender, tgt.sender)
+  tgt._index = src._index || undefined
+  if (src.sender._index) {
+    copyUser(src.sender, tgt.sender)
+  } else {
+    tgt.sender = src.sender
+  }
   tgt.topic = src.topic
   tgt.content = src.content
-  tgt.createdAt = src.createdAt
+  tgt.createdAt = src.createdAt || new Date()
   return tgt
 }
 

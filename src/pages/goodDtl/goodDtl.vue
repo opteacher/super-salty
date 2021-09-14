@@ -80,10 +80,10 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, reactive } from 'vue'
+import { computed, defineComponent, ref } from 'vue'
 import BasicLayout from '../../components/BasicLayout.vue'
 import Taro from '@tarojs/taro'
-import { copyGood, Good, newGood } from '../../commons'
+import { copyGood, newGood } from '../../commons'
 import { getIdenGood } from '../../api'
 import { useStore } from 'vuex'
 
@@ -97,19 +97,19 @@ export default defineComponent({
   },
   setup() {
     const store = useStore()
-    const good: Good = reactive(newGood())
+    const good = ref(newGood())
     const queryParams = Taro.getCurrentInstance().router?.params || {}
     const lgnUsrIdx = store.getters.loginedUser._index
-    const isOwner = computed(() => good.owner._index === lgnUsrIdx)
+    const isOwner = computed(() => good.value.owner._index === lgnUsrIdx)
 
     async function refresh () {
       if (queryParams.gid) {
-        copyGood(await getIdenGood(queryParams.gid), good)
+        good.value = await getIdenGood(queryParams.gid)
       }
       if (queryParams.good) {
-        copyGood(JSON.parse(queryParams.good), good)
+        good.value = copyGood(JSON.parse(queryParams.good))
       }
-      if (!good.name) {
+      if (!good.value._index) {
         Taro.navigateBack({ delta: 1 })
       }
     }

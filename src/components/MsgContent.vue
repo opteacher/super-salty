@@ -17,15 +17,23 @@
       :thumb="good.cover"
     />
     <template v-if="good.owner">
-      <at-divider :height="50" lineColor="#78A4FA"/>
-      <at-button
-        class="mr-0"
-        type="primary"
-        :active="true"
-        size="small"
-        style="width: 200rpx"
-        @click="onOrderSubmit"
-      >Accept</at-button>
+      <at-divider :height="50" lineColor="#A8C6DF"/>
+      <at-flex>
+        <at-flex-item :size="5" v-if="lgnUsr._index !== senderId">
+          <at-button
+            type="primary"
+            :active="true"
+            size="small"
+            @click="onOrderSubmit"
+          >Accept</at-button>
+        </at-flex-item>
+        <at-flex-item :size="5" v-else>
+          <at-button
+            size="small"
+            @click="onResetClick"
+          >Reset</at-button>
+        </at-flex-item>
+      </at-flex>
     </template>
   </view>
   <text v-else>{{content}}</text>
@@ -35,15 +43,18 @@
 import { isEndsWith, isStartsWith, rmvEndsOf } from '../commons'
 import { computed, defineComponent } from 'vue'
 import { useStore } from 'vuex'
+import Taro from '@tarojs/taro'
 export default defineComponent({
   props: {
     senderId: { type: String, required: true },
     content: { type: String, default: '' },
+    topic: { type: String, required: true },
     good: { type: Object, required: true },
     orderConfirmed: { type: Function, required: true },
   },
   setup (props) {
     const store = useStore()
+    const lgnUsr = store.getters.loginedUser
     const ofPrice = computed(() => pickFmOfPrice(props.content))
 
     function msgIsImage (content: string): boolean {
@@ -63,14 +74,26 @@ export default defineComponent({
         }
       })
     }
+    function onResetClick () {
+      const params = [
+        `topic=${props.topic}`,
+        `price=${ofPrice.value.price}`,
+        `unit=${props.good.unit}`,
+      ].join('&')
+      Taro.navigateTo({
+        url: `../offerPrice/offerPrice?${params}`
+      })
+    }
     return {
+      lgnUsr,
       ...props,
       ofPrice,
 
       msgIsImage,
       msgIsOfPice,
       pickFmOfPrice,
-      onOrderSubmit
+      onOrderSubmit,
+      onResetClick
     }
   }
 })
