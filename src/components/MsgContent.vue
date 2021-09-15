@@ -21,6 +21,7 @@
       <at-flex>
         <at-flex-item :size="5" v-if="lgnUsr._index !== senderId">
           <at-button
+            :disabled="ofPrice.ordered"
             type="primary"
             :active="true"
             size="small"
@@ -46,6 +47,7 @@ import { useStore } from 'vuex'
 import Taro from '@tarojs/taro'
 export default defineComponent({
   props: {
+    lindex: { type: Number, default: -1 },
     senderId: { type: String, required: true },
     content: { type: String, default: '' },
     topic: { type: String, required: true },
@@ -76,8 +78,8 @@ export default defineComponent({
     }
     function onResetClick () {
       const params = [
+        `lindex=${props.lindex}`,
         `topic=${props.topic}`,
-        `price=${ofPrice.value.price}`,
         `unit=${props.good.unit}`,
       ].join('&')
       Taro.navigateTo({

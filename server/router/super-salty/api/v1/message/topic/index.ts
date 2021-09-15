@@ -14,6 +14,26 @@ router.post('/:topic', async ctx => {
   }
 })
 
+router.put('/:topic/index/:lindex', async ctx => {
+  ctx.body = {
+    result: await redis.set(
+      ctx.params.topic,
+      [ctx.params.lindex, ctx.request.body.message],
+      { operType: 'lSet' }
+    )
+  }
+})
+
+router.get('/:topic/index/:lindex', async ctx => {
+  ctx.body = {
+    result: await redis.get(
+      ctx.params.topic,
+      [ctx.params.lindex],
+      { operType: 'lIndex' }
+    )
+  }
+})
+
 router.get('/:topic/s', async ctx => {
   ctx.body = {
     result: await redis.get(

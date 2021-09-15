@@ -60,10 +60,13 @@ export default class Redis implements com.Cache, com.DataWatcher {
     if (!options.operType) {
       options.operType = 'hSet'
     }
+    if (!Array.isArray(value)) {
+      value = [value]
+    }
     return this.connect().then(this.cvtClient)
       .then(client => Promise.all([
         Promise.resolve(client),
-        client[options?.operType as string](key, value)
+        client[options?.operType as string](key, ...value)
       ]))
       .then(res => {
         const client = res[0]

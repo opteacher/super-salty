@@ -1,13 +1,8 @@
 <template>
   <basic-layout class="container p-0" style="background-color: #EEF0F0">
-    <view class="center-container" :style="{
-      height: '40vh',
-      'background-color': '#C2ABC7'
-    }">
+    <view class="center-container avatar-container">
       <view class="text-center">
-        <at-avatar circle :image="account.avatar"
-          style="width: 30vw; height: 30vw; margin: 0 auto"
-        />
+        <at-avatar circle :image="account.avatar"/>
         <view class="at-article__p lighter-ft-color">{{account.intro}}</view>
       </view>
     </view>
@@ -17,8 +12,9 @@
       extra="more"
       :icon="{ value: 'shopping-bag-2', color: '#6190E8' }"
       is-full
+      @click="onOrderClicked"
     >
-      <at-grid :columnNum="5" :data="orders"/>
+      <at-grid :columnNum="5" :data="orders" @click="onOrderClicked"/>
     </at-card>
     <at-card
       class="mt-10"
@@ -40,11 +36,13 @@
   </basic-layout>
 </template>
 
-<script>
+<script lang="ts">
 import { defineComponent, ref } from 'vue'
-import { getAllGoods } from '../../api'
+import { getGoodsByOwner } from '../../api'
 import GoodCard from '../../components/GoodCard.vue'
-import BasicLayout from '../../components/BasicLayout'
+import BasicLayout from '../../components/BasicLayout.vue'
+import { useStore } from 'vuex'
+import { Good } from 'src/commons'
 
 export default defineComponent({
   name: 'my',
@@ -52,8 +50,13 @@ export default defineComponent({
     GoodCard,
     BasicLayout
   },
+  onShow () {
+    this.refresh()
+  },
   setup () {
-    const account = ref(require('../../resources/account.json').data)
+    const store = useStore()
+    const account = ref(store.getters.loginedUser)
+    const pubGoods = ref([] as Good[][])
     const orders = [{
       iconInfo: {
         size: 30,
@@ -85,19 +88,27 @@ export default defineComponent({
       },
       value: 'Refund'
     }]
-    let goods = getAllGoods()
-    const pubGoods = ref([])
-    for (let i = 0; i < goods.length; i += 2) {
-      const item = [goods[i]]
-      if (i !== goods.length - 1) {
-        item.push(goods[i + 1])
+
+    async function refresh () {
+      let goods = await getGoodsByOwner(account.value._index)
+      for (let i = 0; i < goods.length; i += 2) {
+        const item = [goods[i]]
+        if (i !== goods.length - 1) {
+          item.push(goods[i + 1])
+        }
+        pubGoods.value.push(item)
       }
-      pubGoods.value.push(item)
+    }
+    function onOrderClicked (item: object, index: number) {
+      console.log(item, index)
     }
     return {
       account,
       orders,
-      pubGoods
+      pubGoods,
+
+      refresh,
+      onOrderClicked
     }
   }
 })
@@ -107,5 +118,16 @@ export default defineComponent({
 .order-card .at-card__content {
   padding-left: 0 !important;
   padding-right: 0 !important;
+}
+
+.avatar-container {
+  height: 40vh;
+  background-color: #c2abc7;
+
+  .at-avatar {
+    width: 30vw;
+    height: 30vw;
+    margin: 0 auto;
+  }
 }
 </style>

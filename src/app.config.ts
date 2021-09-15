@@ -12,6 +12,7 @@ export default {
     'pages/addGoodScs/addGoodScs',
     'pages/addNews/addNews',
     'pages/genOrderScs/genOrderScs',
+    'pages/orderDtl/orderDtl',
   ],
   window: {
     backgroundTextStyle: 'light',

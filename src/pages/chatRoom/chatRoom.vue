@@ -10,7 +10,9 @@
     />
     <scroll-view id="pnlMessages" :scroll-y="true" :style="{
       'margin-top': '140rpx',
-      'margin-bottom': msgPanelBtm
+      'margin-bottom': msgPanelBtm,
+      //'animation-duration': '3s',
+      //'animation-name': operVisible ? 'slideup' : 'slidedown'
     }">
       <view class="p-20">
         <template v-for="(message, index) in messages" :key="index">
@@ -28,7 +30,7 @@
                 <view class="msg-arrow" style="left: 6rpx"/>
                 <view class="msg-content ml-15">
                   <msg-content
-                    :good="good" :topic="topic"
+                    :good="good" :topic="topic" :lindex="message.index"
                     :senderId="message.sender._index || message.sender"
                     :content="message.content"
                     :orderConfirmed="onOrderConfirmed"
@@ -54,7 +56,7 @@
                 <view class="msg-arrow" style="right: 6rpx"/>
                 <view class="msg-content mr-15">
                   <msg-content
-                    :good="good" :topic="topic"
+                    :good="good" :topic="topic" :lindex="message.index"
                     :senderId="message.sender._index || message.sender"
                     :content="message.content"
                     :orderConfirmed="onOrderConfirmed"
@@ -128,8 +130,8 @@ import { computed, defineComponent, reactive, Ref, ref, toRefs, onUnmounted } fr
 import BasicLayout from '../../components/BasicLayout.vue'
 import MsgContent from '../../components/MsgContent.vue'
 import Taro from '@tarojs/taro'
-import { FormState, newGood, uploadImage, newUser, Message, copyMessage } from '../../commons'
-import { getIdenGood, genNewOrder, getUserByIdx, getAllMessages, addMessage } from '../../api'
+import { FormState, newGood, uploadImage, newUser, Message, copyMessage, isEndsWith, rmvEndsOf } from '../../commons'
+import { getIdenGood, genNewOrder, getUserByIdx, getAllMessages, addMessage, setMessage } from '../../api'
 import { useStore } from 'vuex'
 export default defineComponent({
   components: {
@@ -215,8 +217,7 @@ export default defineComponent({
       await refresh()
     }
     async function refresh () {
-      messages.value = (await getAllMessages(topic))
-        .sort((m1, m2) => m1.createdAt > m2.createdAt ? 1 : -1)
+      messages.value = await getAllMessages(topic)
       Taro.nextTick(scrollToEnd)
     }
     function scrollToEnd () {
@@ -283,10 +284,23 @@ export default defineComponent({
       }
     }
     async function onOrderConfirmed (finPrice: number) {
+      // 禁用之前所有报价消息
+      if (optionState.ldgMessage !== -1) {
+        await new Promise(resolve => setTimeout(resolve, 5000))
+      }
+      for (let i = messages.value.length - 1; i >= 0; i--) {
+        const message = messages.value[i]
+        if (isEndsWith(message.content, '#offerPrice')) {
+          const ofPrice = JSON.parse(rmvEndsOf(message.content, '#offerPrice'))
+          ofPrice.ordered = true
+          message.content = JSON.stringify(ofPrice) + '#offerPrice'
+          await setMessage(message.index as number, message)
+        }
+      }
       console.log(await genNewOrder({
         price: finPrice,
-        good: good.value._index,
-        buyer: lgnUsr._index,
+        good: qryPam.gid,
+        buyer: qryPam.bid,
         status: 'WaitForSend',
       }))
     }
@@ -377,5 +391,22 @@ export default defineComponent({
   border: 5rpx solid #6190e8;
   background-color: #fafbfc;
   color: #6190e8;
+}
+
+@keyframes slideup {
+  from {
+    margin-bottom: 15vw;
+  }
+  to {
+    margin-bottom: 70vw;
+  }
+}
+@keyframes slidedown {
+  from {
+    margin-bottom: 70vw;
+  }
+  to {
+    margin-bottom: 15vw;
+  }
 }
 </style>

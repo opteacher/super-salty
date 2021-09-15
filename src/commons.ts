@@ -367,6 +367,7 @@ export function copyGood (src: any, tgt?: Good): Good {
 }
 
 export interface Message extends BasicIndex {
+  index?: number
   topic: string
   content: string
   sender: User
@@ -407,7 +408,17 @@ export interface Order extends BasicIndex {
   updatedAt?: Date
 }
 
-export function copyOrder (src: any, tgt: Order): Order {
+export function newOrder (): Order {
+  return {
+    price: -1,
+    good: newGood(),
+    buyer: newUser(),
+    status: 'Closed'
+  }
+}
+
+export function copyOrder (src: any, tgt?: Order): Order {
+  tgt = tgt || newOrder()
   tgt._index = src._index
   copyGood(src.good, tgt.good)
   copyUser(src.buyer, tgt.buyer)

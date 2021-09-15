@@ -1,6 +1,6 @@
 <template>
   <view hover-class="good-card-clicked" class="good-card" @tap="onGoodClicked">
-    <image class="good-logo" mode="widthFix" :src="good.logo"/>
+    <image class="good-logo" mode="widthFix" :src="good.cover"/>
     <view class="good-info">
       <at-flex align="center" justify="around">
         <at-flex-item :size="8">
@@ -46,28 +46,27 @@ export default defineComponent ({
   }
 
   .good-info {
-
     .good-title {
       font-size: 10pt;
     }
 
     .good-price {
-      color: #6190E8;
+      color: #6190e8;
       // font-weight: bold;
       font-size: 10pt;
     }
 
     .good-spec {
       margin-top: -4px;
-      background-color: #FFC82C;
+      background-color: #ffc82c;
       color: white;
     }
 
     .good-tag {
       display: inline-block;
       margin-right: 5rpx;
-      border-color: #FF4949;
-      color: #FF4949;
+      border-color: #ff4949;
+      color: #ff4949;
     }
 
     .good-tag:first {
@@ -75,8 +74,8 @@ export default defineComponent ({
     }
 
     .good-location {
-      color: #13CE66;
-      border-color: #13CE66;
+      color: #13ce66;
+      border-color: #13ce66;
     }
   }
 }

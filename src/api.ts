@@ -1,11 +1,16 @@
-import { callBackend, copyGood, copyUser, Good, User } from './commons'
+import { callBackend, copyGood, copyMessage, copyOrder, copyUser, Good, Message, Order, User } from './commons'
 
 export async function getIdenGood (goodId: string): Promise<Good> {
-  return copyGood(await callBackend(`/super-salty/mdl/v1/good/${goodId}`, 'GET'))
+  return callBackend(`/super-salty/mdl/v1/good/${goodId}`, 'GET').then(copyGood)
 }
 
 export function getAllGoods (): Promise<any> {
   return callBackend(`/super-salty/mdl/v1/goods`, 'GET')
+}
+
+export function getGoodsByOwner (uid: string): Promise<Good[]> {
+  return callBackend('/super-salty/mdl/v1/goods', 'GET', { owner: uid })
+    .then(ress => ress.map(copyGood))
 }
 
 export function addNewGood (form: any): Promise<any> {
@@ -16,10 +21,17 @@ export function genNewOrder (form: any): Promise<any> {
   return callBackend('/super-salty/mdl/v1/order', 'POST', form)
 }
 
-export function getAllMessages (topic: string) {
+export function getOrder (index: string): Promise<Order> {
+  return callBackend(`/super-salty/mdl/v1/order/${index}`, 'GET').then(copyOrder)
+}
+
+export function getAllMessages (topic: string): Promise<Message[]> {
   return callBackend(`/super-salty/api/v1/message/topic/${topic}/s`, 'GET', {}, {
     showLoading: false, showTipText: false
-  }).then(ress => ress.map(res => JSON.parse(res)))
+  }).then(ress => ress
+    .map((res, idx) => Object.assign({ index: idx }, JSON.parse(res)))
+    .sort((m1, m2) => m1.createdAt > m2.createdAt ? 1 : -1)
+  )
 }
 
 export function getAllMsgsByUsr (usrIdx: string) {
@@ -31,10 +43,21 @@ export function addMessage (message: any) {
     { message: JSON.stringify(message) }, { showLoading: false })
 }
 
+export function setMessage (lindex: number, message: Message) {
+  return callBackend(`/super-salty/api/v1/message/topic/${message.topic}/index/${lindex}`, 'PUT',
+    { message: JSON.stringify(message) })
+}
+
+export function getMessage (lindex: number, topic: string): Promise<Message> {
+  return callBackend(`/super-salty/api/v1/message/topic/${topic}/index/${lindex}`, 'GET')
+    .then(res => JSON.parse(res))
+    .then(copyMessage)
+}
+
 export function getAllNews () {
   return require('./resources/news.json').data
 }
 
-export async function getUserByIdx (index: string): Promise<User> {
-  return copyUser(await callBackend(`/super-salty/mdl/v1/user/${index}`, 'GET'))
+export function getUserByIdx (index: string): Promise<User> {
+  return callBackend(`/super-salty/mdl/v1/user/${index}`, 'GET').then(copyUser)
 }
