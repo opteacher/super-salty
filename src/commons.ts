@@ -261,6 +261,7 @@ export async function uploadImage (callback?: (progress: number) => void): Promi
       filePath: res.tempFilePaths[0],
       name: 'file',
       success (res) {
+        console.log(res)
         const data = JSON.parse(res.data)
         resolve(data.result)
       },

@@ -83,9 +83,12 @@
             type="text"
             placeholder="input message"
             :border="false"
-            :value="form.content"
-            :focus="focusComp === 'content'"
-            @change="val => { form.content = onFieldChanged('content', val) }"
+            :value="formState.form.content"
+            :focus="formState.focusComp.value === 'content'"
+            :error="formState.errMsgs.content !== ''"
+            @change="val => {
+              formState.form.content = formState.onFieldChanged('content', val)
+            }"
           />
         </at-flex-item>
         <at-flex-item :size="2" class="pr-10">
@@ -102,11 +105,11 @@
         </at-flex-item>
       </at-flex>
       <view
-        v-if="errMsgs.content !== ''"
+        v-if="formState.errMsgs.content !== ''"
         class="at-article__info err-msg"
         style="height: 5vw"
       >
-        {{errMsgs.content}}
+        {{formState.errMsgs.content}}
       </view>
       <at-accordion
         class="collapse-toolbox"
@@ -147,8 +150,8 @@ export default defineComponent({
     const qryPam = Taro.getCurrentInstance().router?.params || {}
     const topic = `${qryPam.gid}.${qryPam.bid}`
 
-    const good = ref(newGood())
-    const buyer = ref(newUser())
+    const good = reactive(newGood())
+    const buyer = reactive(newUser())
     const formState = new FormState({
       topic: { default: topic },
       content: { default: '', rule: { required: true } },
@@ -159,7 +162,7 @@ export default defineComponent({
       topic,
       operVisible: false,
       cost: computed(() => {
-        return good.value.price ? good.value.unit + good.value.price : ''
+        return good.price ? good.unit + good.price : ''
       }),
       msgPanelBtm: computed(() => {
         return optionState.operVisible ? `${
@@ -208,12 +211,12 @@ export default defineComponent({
         Taro.navigateBack({ delta: 1 })
         return
       }
-      good.value = await getIdenGood(qryPam.gid)
+      await getIdenGood(qryPam.gid, good)
       if (!qryPam.bid) {
         Taro.navigateBack({ delta: 1 })
         return
       }
-      buyer.value = await getUserByIdx(qryPam.bid)
+      await getUserByIdx(qryPam.bid, buyer)
       await refresh()
     }
     async function refresh () {
@@ -270,8 +273,8 @@ export default defineComponent({
       console.log('Require a price')
       const params = [
         `topic=${topic}`,
-        `price=${good.value.price}`,
-        `unit=${good.value.unit}`,
+        `price=${good.price}`,
+        `unit=${good.unit}`,
       ].join('&')
       Taro.navigateTo({
         url: `../offerPrice/offerPrice?${params}`
@@ -312,7 +315,7 @@ export default defineComponent({
       good,
       toolBox,
       messages,
-      ...formState.toRefs(),
+      formState,
       ...toRefs(optionState),
 
       init,

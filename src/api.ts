@@ -71,6 +71,8 @@ export function getAllNews () {
   return require('./resources/news.json').data
 }
 
-export function getUserByIdx (index: string): Promise<User> {
-  return callBackend(`/super-salty/mdl/v1/user/${index}`, 'GET').then(copyUser)
+export function getUserByIdx (index: string, output?: User): Promise<User> {
+  return callBackend(`/super-salty/mdl/v1/user/${index}`, 'GET').then(res => {
+    return output ? copyUser(res, output) : copyUser(res)
+  })
 }

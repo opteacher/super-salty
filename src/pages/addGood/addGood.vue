@@ -3,44 +3,50 @@
     <at-form style="padding: 10rpx 8rpx">
       <upld-img-btn
         class="mb-20"
-        :form="form"
+        :form="formState.form"
         prop="cover"
-        placeholder="Upload cover"
-        :complete="imgURL => onFieldChanged('cover', imgURL)"
+        placeholder="Upload Cover"
+        :complete="imgURL => formState.onFieldChanged('cover', imgURL)"
       />
-      <view v-if="errMsgs.cover !== ''" class="at-article__info err-msg">
-        {{errMsgs.cover}}
+      <view v-if="formState.errMsgs.cover !== ''" class="at-article__info err-msg">
+        {{formState.errMsgs.cover}}
       </view>
       <at-flex class="mb-20" justify="around">
         <at-flex-item :size="9">
           <at-input
             type="number"
-            :focus="focusComp === 'price'"
-            :error="errMsgs.price !== ''"
+            :focus="formState.focusComp.value === 'price'"
+            :error="formState.errMsgs.price !== ''"
             placeholder="input good price"
-            :value="form.price"
-            @change="val => { form.price = onFieldChanged('price', val) }"
+            :value="formState.form.price"
+            @change="val => {
+              formState.form.price = formState.onFieldChanged('price', val)
+            }"
           />
         </at-flex-item>
         <at-flex-item :size="3" style="border-bottom: 1px solid #f0f0f0">
           <at-button class="b-0" @click="onUnitChanged">
-            <text style="font-size: 12pt; color: #8DABC4">{{form.unit}}</text>
+            <text style="font-size: 12pt; color: #8DABC4">
+              {{formState.form.unit}}
+            </text>
           </at-button>
         </at-flex-item>
       </at-flex>
-      <view v-if="errMsgs.price !== ''" class="at-article__info err-msg">
-        {{errMsgs.price}}
+      <view v-if="formState.errMsgs.price !== ''" class="at-article__info err-msg">
+        {{formState.errMsgs.price}}
       </view>
       <at-input
         class="mb-20" type="text"
-        :focus="focusComp === 'name'"
-        :error="errMsgs.name !== ''"
+        :focus="formState.focusComp.value === 'name'"
+        :error="formState.errMsgs.name !== ''"
         placeholder="input good name"
-        :value="form.name"
-        @change="val => { form.name = onFieldChanged('name', val) }"
+        :value="formState.form.name"
+        @change="val => {
+          formState.form.name = formState.onFieldChanged('name', val)
+        }"
       />
-      <view v-if="errMsgs.name !== ''" class="at-article__info err-msg">
-        {{errMsgs.name}}
+      <view v-if="formState.errMsgs.name !== ''" class="at-article__info err-msg">
+        {{formState.errMsgs.name}}
       </view>
       <picker
         class="loc-picker mb-20"
@@ -51,29 +57,31 @@
         <view v-if="location[0].length">{{location.join('')}}</view>
         <view v-else style="color: #CCCCCC">select good location</view>
       </picker>
-      <view v-if="errMsgs.location !== ''" class="at-article__info err-msg">
-        {{errMsgs.location}}
+      <view v-if="formState.errMsgs.location !== ''" class="at-article__info err-msg">
+        {{formState.errMsgs.location}}
       </view>
       <at-textarea
         class="mb-20 b-0 pr-0"
-        :focus="focusComp === 'desc'"
-        :error="errMsgs.desc !== ''"
+        :focus="formState.focusComp.value === 'desc'"
+        :error="formState.errMsgs.desc !== ''"
         style="padding-left: 32rpx"
-        :maxLength="rules.desc.max"
+        :maxLength="formState.rules.desc.max"
         placeholder="input good description"
-        :value="form.desc"
-        @change="val => { form.desc = onFieldChanged('desc', val) }"
+        :value="formState.form.desc"
+        @change="val => {
+          formState.form.desc = formState.onFieldChanged('desc', val)
+        }"
       />
-      <view v-if="errMsgs.desc !== ''" class="at-article__info err-msg">
-        {{errMsgs.desc}}
+      <view v-if="formState.errMsgs.desc !== ''" class="at-article__info err-msg">
+        {{formState.errMsgs.desc}}
       </view>
       <view class="mb-20">
         <at-tag
-          v-for="(tag, idx) in form.tags" :key="tag"
+          v-for="(tag, idx) in formState.form.tags" :key="tag"
           class="mr-10 good-tag" :active="true" circle
           @click="store.dispatch('showConfirm', {
             content: 'Do you really wanna remove this tag?',
-            confirmed: () => { form.tags.splice(idx, 1) }
+            confirmed: () => { formState.form.tags.splice(idx, 1) }
           })"
         >{{tag}}</at-tag>
         <at-tag class="add-tag" circle :active="true"
@@ -107,21 +115,21 @@
           </at-modal-action>
         </at-modal>
       </view>
-      <view v-for="image in form.images" :key="image" class="mb-20">
+      <view v-for="image in formState.form.images" :key="image" class="mb-20">
         <image mode="widthFix" :src="image" style="width: 100%"/>
       </view>
       <upld-img-btn
         class="mb-20"
-        :form="form"
+        :form="formState.form"
         prop="images"
-        placeholder="Upload pictures"
+        placeholder="Upload Pictures"
         :display="false"
         height="100rpx"
         direction="horizontal"
-        :complete="() => onFieldChanged('images', form.images)"
+        :complete="() => formState.onFieldChanged('images', formState.form.images)"
       />
-      <view v-if="errMsgs.images !== ''" class="at-article__info err-msg">
-        {{errMsgs.images}}
+      <view v-if="formState.errMsgs.images !== ''" class="at-article__info err-msg">
+        {{formState.errMsgs.images}}
       </view>
       <at-flex>
         <at-flex-item :size="6">
@@ -168,9 +176,9 @@ export default defineComponent({
       location: { default: '', rule: { required: true } },
       images: { default: [], rule: { required: true, min: 1 } },
       tags: { default: [], rule: { required: true } },
-      owner: { default: store.getters.logined.user._index },
-      publisher: { default: store.getters.logined.account },
-      avatar: { default: store.getters.logined.user.avatar },
+      owner: { default: store.getters.loginedUser._index },
+      publisher: { default: store.getters.loginedUser.account },
+      avatar: { default: store.getters.loginedUser.avatar },
       viewed: { default: 0 },
       liked: { default: 0 }
     })
@@ -209,7 +217,7 @@ export default defineComponent({
     }
     return {
       store,
-      ...formState.toRefs(),
+      formState,
       ...toRefs(optionState),
 
       onFormSubmit,

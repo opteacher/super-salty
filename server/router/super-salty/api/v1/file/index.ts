@@ -15,7 +15,7 @@ router.post('/', async ctx => {
       }
     }
   }
-  const flPath = (<File>ctx.request.files.file).path
+  const flPath = (ctx.request.files.file as File).path
   const key = ctx.request.body.key || path.parse(flPath).base
   ctx.body = {
     result: await uploadToQiniu(key, fs.createReadStream(flPath))

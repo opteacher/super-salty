@@ -17,7 +17,11 @@
       :thumb="good.cover"
     />
     <template v-if="good.owner">
-      <at-divider :height="50" lineColor="#A8C6DF"/>
+      <at-divider
+        :height="50"
+        lineColor="#A8C6DF"
+        style="z-index: 1"
+      />
       <at-flex>
         <at-flex-item :size="5" v-if="lgnUsr._index !== senderId">
           <at-button
