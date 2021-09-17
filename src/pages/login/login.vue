@@ -1,17 +1,13 @@
 <template>
   <basic-layout>
     <at-form @onSubmit="onFormSubmit" :reportSubmit="true">
-      <at-input
-        clear
-        :focus="focusComp === 'phone'"
-        :error="errMsgs.phone !== ''"
-        name="phone"
-        type="phone"
-        placeholder="input phone"
-        :value="form.phone"
-        @change="val => { form.phone = onFieldChanged('phone', val) }"
+      <valid-input
+        field="phone"
+        ftype="phone"
+        :form-state="formState"
       >
         <view
+          v-if="mode === 'regup'"
           :style="{
             color: sdCdDisabled ? '#FF4949' : '',
             fontSize: '12px',
@@ -19,46 +15,33 @@
           }"
           @tap="onSendCode"
         >{{ showTipText() }}</view>
-      </at-input>
-      <view v-if="errMsgs.phone !== ''" class="at-article__info err-msg">
-        {{errMsgs.phone}}
-      </view>
+      </valid-input>
       <at-input
+        v-if="mode === 'regup'"
         required
         type="text"
         placeholder="input SMS verfication code"
         @change="val => {}"
       />
-      <at-input
-        clear
-        :error="errMsgs.password !== ''"
-        :focus="focusComp === 'password'"
-        name="password"
-        type="password"
-        placeholder="input password"
-        :value="form.password"
-        @change="val => { form.password = onFieldChanged('password', val) }"
+      <valid-input
+        field="password"
+        ftype="password"
+        :form-state="formState"
       />
-      <view v-if="errMsgs.password !== ''" class="at-article__info err-msg">
-        {{errMsgs.password}}
-      </view>
-      <at-input
-        required
-        :focus="focusComp === 'verfCode'"
-        name="verfCode"
-        type="text"
-        placeholder="input verfication code"
-        :maxLength="5"
-        :value="form.verfCode"
-        @change="val => { form.verfCode = onFieldChanged('verfCode', val) }"
+      <valid-input
+        v-if="mode === 'regup'"
+        field="verfCode"
+        :form-state="formState"
       >
-        <verf-code width="100" height="25" :onRefresh="onVfCdRefreshed"/>
-      </at-input>
-      <view v-if="errMsgs.verfCode !== ''" class="at-article__info err-msg">
-        {{errMsgs.verfCode}}
-      </view>
+        <verf-code
+          width="100" height="25"
+          :onRefresh="onVfCdRefreshed"
+        />
+      </valid-input>
       <view style="padding: 20rpx 10rpx">
-        <at-button type="primary" formType="submit" @click="onFormSubmit">Login / Register</at-button>
+        <at-button type="primary" formType="submit" @click="onFormSubmit">
+          Login / Register
+        </at-button>
         <view class="at-article__info mt-20">forgot password?&nbsp;
           <navigator class="inline-link">click here</navigator>
         </view>
@@ -78,8 +61,12 @@
         </view>
       </at-modal-content>
       <at-modal-action>
-        <at-button class="w-100 br-0 b-0" @click="rgpCfmVisible = false">Cancel</at-button>
-        <at-button type="primary" class="w-100 br-0 b-0" @click="onRgpAndLgn">Confirm</at-button>
+        <at-button class="w-100 br-0 b-0"
+          @click="rgpCfmVisible = false"
+        >Cancel</at-button>
+        <at-button type="primary" class="w-100 br-0 b-0"
+          @click="mode = 'regup'; rgpCfmVisible = false"
+        >OK</at-button>
       </at-modal-action>
     </at-modal>
   </basic-layout>
@@ -92,12 +79,13 @@ import VerfCode from '../../components/VerfCode.vue'
 import { FormState } from '../../commons'
 import { useStore } from 'vuex'
 import Taro from '@tarojs/taro'
-
+import ValidInput from '../../components/ValidInput.vue'
 export default defineComponent({
   name: 'login',
   components: {
     BasicLayout,
-    VerfCode
+    VerfCode,
+    ValidInput
   },
   setup() {
     const store = useStore()
@@ -108,6 +96,7 @@ export default defineComponent({
       verfCode: { default: '', rule: { required: true, pattern: '' } }
     }, 'phone')
     const optionState = reactive({
+      mode: 'login',
       sdCdDisabled: false,
       rgpCfmVisible: false
     })
@@ -122,11 +111,16 @@ export default defineComponent({
       formState.rules.verfCode.pattern = verfCode
     }
     async function onFormSubmit () {
-      const chkRes = formState.validateForm()
+      const chkRes = formState.validateForm(undefined,
+        optionState.mode === 'login' ? ['verfCode'] : []
+      )
       if (chkRes[0].length) {
         formState.errMsgs[chkRes[0]] = chkRes[1]
       } else {
         try {
+          if (optionState.mode === 'regup') {
+            await store.dispatch('regup', formState.form)
+          }
           await store.dispatch('login', formState.form)
         } catch (err) {
           if (err.code && err.code === 4000) {
@@ -134,28 +128,18 @@ export default defineComponent({
           }
           return
         }
-        Taro.switchTab({ url: '../../pages/index/index' })
+        Taro.switchTab({ url: '../index/index' })
       }
     }
-    async function onRgpAndLgn () {
-      try {
-        await store.dispatch('regup', formState.form)
-        await store.dispatch('login', formState.form)
-      } catch (err) {
-        return
-      }
-      Taro.switchTab({ url: '../../pages/index/index' })
-    }
-
     return {
+      formState,
       ...formState.toRefs(),
       ...toRefs(optionState),
 
       onSendCode,
       showTipText,
       onFormSubmit,
-      onVfCdRefreshed,
-      onRgpAndLgn
+      onVfCdRefreshed
     }
   }
 })

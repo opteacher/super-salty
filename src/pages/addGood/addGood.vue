@@ -182,7 +182,7 @@ export default defineComponent({
       } else {
         const good = await addNewGood(formState.form)
         Taro.navigateTo({
-          url: `../../pages/addGoodScs/addGoodScs?gid=${good._index}`
+          url: `../addGoodScs/addGoodScs?gid=${good._index}`
         })
       }
     }
@@ -193,7 +193,7 @@ export default defineComponent({
     }
     function onReviewClicked () {
       Taro.navigateTo({
-        url: `../../pages/goodDtl/goodDtl?review=1&good=${JSON.stringify(formState.form)}`,
+        url: `../goodDtl/goodDtl?review=1&good=${JSON.stringify(formState.form)}`,
       })
     }
     function onUnitChanged () {

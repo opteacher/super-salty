@@ -1,8 +1,9 @@
 import store from './store'
 import Taro from '@tarojs/taro'
-import { reactive, ref } from 'vue'
+import { reactive, Ref, ref } from 'vue'
 
-export const bkHost = process.env.NODE_ENV === 'production' ? '' : 'http://127.0.0.1:4000'
+export const bkHost = process.env.NODE_ENV === 'production'
+  ? 'https://opteacher.top' : 'http://127.0.0.1:4000'
 
 interface Response {
   data: any
@@ -45,7 +46,7 @@ export class FormState {
   form: IndexStruct
   rules: any
   errMsgs: IndexString
-  focusComp: any
+  focusComp: Ref<string>
 
   constructor (attrs: IndexStruct, focusComp?: string) {
     const errMsgs: IndexString = {}
@@ -100,17 +101,17 @@ export class FormState {
     } else {
       this.errMsgs[key] = ''
     }
-    this.focusComp = key
+    this.focusComp.value = key
     return val
   }
 
-  public validateForm (fields?: IndexStruct): [string, string] {
+  public validateForm (fields?: IndexStruct, ignores: string[] = []): [string, string] {
     if (!fields) {
       fields = this.form
     }
     for (const [key, value] of Object.entries(fields)) {
       const rule = this.rules[key]
-      if (!rule) {
+      if (!rule || ignores.includes(key)) {
         continue
       }
       if (rule.required) {
@@ -320,7 +321,7 @@ export function copyUser (src: any, tgt?: User): User {
 }
 
 export interface Good extends BasicIndex {
-  owner: User
+  owner: User | string
   cover: string
   name: string
   location: string
@@ -335,7 +336,7 @@ export interface Good extends BasicIndex {
 
 export function newGood (): Good {
   return {
-    owner: newUser(),
+    owner: '',
     cover: '',
     name: '',
     location: '',
@@ -352,7 +353,12 @@ export function newGood (): Good {
 export function copyGood (src: any, tgt?: Good): Good {
   tgt = tgt || newGood()
   tgt._index = src._index
-  copyUser(src.owner, tgt.owner)
+  if (typeof src.owner === 'string') {
+    tgt.owner = src.owner
+  } else {
+    tgt.owner = newUser()
+    copyUser(src.owner, tgt.owner)
+  }
   tgt.cover = src.cover
   tgt.name = src.name
   tgt.location = src.location
@@ -396,7 +402,7 @@ export function copyMessage (src: any, tgt?: Message): Message {
   return tgt
 }
 
-export type OrderStatus = 'WaitForSend' | 'Sending' | 'WaitForReceive' | 'Received' | 'WaitForEvaluate' | 'Returned' | 'Closed'
+export type OrderStatus = 'Pay' | 'Send' | 'Sending' | 'Receive' | 'Evaluate' | 'Returned' | 'Closed'
 export interface Order extends BasicIndex {
   price: number
   tags?: string[]
@@ -404,8 +410,8 @@ export interface Order extends BasicIndex {
   buyer: User
   status: OrderStatus
   delivery?: string
-  createdAt?: Date
-  updatedAt?: Date
+  createdAt?: string
+  updatedAt?: string
 }
 
 export function newOrder (): Order {
@@ -413,7 +419,7 @@ export function newOrder (): Order {
     price: -1,
     good: newGood(),
     buyer: newUser(),
-    status: 'Closed'
+    status: 'Pay',
   }
 }
 
@@ -425,8 +431,14 @@ export function copyOrder (src: any, tgt?: Order): Order {
   tgt.price = src.price
   tgt.tags = src.tags
   tgt.status = src.status
-  tgt.delivery = src.delivery
-  tgt.createdAt = src.createdAt
-  tgt.updatedAt = src.updatedAt
+  tgt.delivery = src.delivery || ''
+  if (src.createdAt) {
+    tgt.createdAt = src.createdAt.toLocalString ?
+      src.createdAt.toLocalString() : src.createdAt.toString()
+  }
+  if (src.updatedAt) {
+    tgt.updatedAt = src.updatedAt.toLocalString ?
+      src.updatedAt.toLocalString() : src.updatedAt.toString()
+  }
   return tgt
 }

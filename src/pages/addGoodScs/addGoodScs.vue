@@ -1,6 +1,6 @@
 <template>
   <scs-result title="Add Good Succeed!" content="Your good now display in the home page.">
-    <at-flex>
+    <at-flex class="mt-50">
       <at-flex-item :size="6" class="mr-5">
         <at-button type="primary" @click="onToDetailClicked">View Detail</at-button>
       </at-flex-item>
@@ -27,17 +27,17 @@ export default defineComponent({
     function onToDetailClicked () {
       const queryParams = Taro.getCurrentInstance().router?.params || {}
       Taro.navigateTo({
-        url: `../../pages/goodDtl/goodDtl?gid=${queryParams.gid}`
+        url: `../goodDtl/goodDtl?gid=${queryParams.gid}`
       })
     }
     function onAddAgainClicked () {
       Taro.navigateTo({
-        url: '../../pages/addGood/addGood'
+        url: '../addGood/addGood'
       })
     }
     function onToHomeClicked () {
       Taro.switchTab({
-        url: '../../pages/index/index'
+        url: '../index/index'
       })
     }
     return {

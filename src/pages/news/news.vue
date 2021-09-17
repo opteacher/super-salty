@@ -41,7 +41,7 @@ export default defineComponent({
     function onReachBtm () {}
     function onAddNewsClicked () {
       Taro.navigateTo({
-        url: '../../pages/addNews/addNews'
+        url: '../addNews/addNews'
       })
     }
     return {

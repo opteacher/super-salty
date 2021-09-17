@@ -20,6 +20,10 @@
   white-space: nowrap;
 }
 
+.bb-0 {
+  border-bottom: none !important;
+}
+
 @for $i from 0 to 100 {
   .m-#{$i} {
     margin: #{$i}rpx !important;

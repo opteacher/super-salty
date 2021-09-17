@@ -30,6 +30,7 @@
         </at-flex-item>
         <at-flex-item :size="5" v-else>
           <at-button
+            :disabled="ofPrice.ordered"
             size="small"
             @click="onResetClick"
           >Reset</at-button>

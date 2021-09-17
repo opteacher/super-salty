@@ -65,7 +65,7 @@ export default defineComponent({
       } else {
         // const good = await addNewGood(formState.form)
         // Taro.navigateTo({
-        //   url: `../../pages/addGoodScs/addGoodScs?gid=${good._index}`
+        //   url: `../addGoodScs/addGoodScs?gid=${good._index}`
         // })
       }
     }

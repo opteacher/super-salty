@@ -24,7 +24,7 @@ export default defineComponent ({
   setup(props) {
     function onGoodClicked() {
       Taro.navigateTo({
-        url: '../../pages/addGood/addGood'
+        url: '../addGood/addGood'
       })
     }
     return {

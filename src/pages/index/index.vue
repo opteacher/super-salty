@@ -59,7 +59,7 @@ export default defineComponent({
     }
     function onAddGoodClicked () {
       Taro.navigateTo({
-        url: '../../pages/addGood/addGood'
+        url: '../addGood/addGood'
       })
     }
     return {

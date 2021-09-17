@@ -7,7 +7,7 @@ export default db.defineModel('order', {
   tags: db.PropTypes.Array, // good tags的基础上附加的标签。如宝贝原先不保修，后买家与卖家交涉后，可将包邮的标签打入这里
   good: { type: db.PropTypes.Id, ref: 'good' },
   buyer: { type: db.PropTypes.Id, ref: 'user' },
-  status: db.PropTypes.String, // WaitForSend/Sending/WaitForReceive/Received/WaitForEvaluate/Returned/Closed
+  status: db.PropTypes.String, // Pay/Send/Sending/Receive/Evaluate/Returned/Closed
   delivery: db.PropTypes.String,
   createdAt: db.PropTypes.Date,
   updatedAt: db.PropTypes.Date,

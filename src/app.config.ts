@@ -11,6 +11,7 @@ export default {
     'pages/addGood/addGood',
     'pages/addGoodScs/addGoodScs',
     'pages/addNews/addNews',
+    'pages/orderList/orderList',
     'pages/genOrderScs/genOrderScs',
     'pages/orderDtl/orderDtl',
   ],

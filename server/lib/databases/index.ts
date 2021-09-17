@@ -25,7 +25,7 @@ export interface DefineOptions extends IndexStruct {
 export interface SelectOptions extends IndexStruct {
   selCols?: string[]
   rawQuery?: boolean
-  ext?: boolean
+  ext?: boolean | string[]
 }
 
 export interface SaveOptions extends IndexStruct {

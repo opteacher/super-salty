@@ -14,24 +14,32 @@
       is-full
       @click="onOrderClicked"
     >
-      <at-grid :columnNum="5" :data="orders" @click="onOrderClicked"/>
+      <at-grid :columnNum="3" :data="orders" @click="onOrderClicked"/>
     </at-card>
     <at-card
-      class="mt-10"
+      class="mt-10 bb-0"
       title="Published goods"
       :icon="{ value: 'list', color: '#6190E8' }"
       is-full
     >
-      <at-flex v-for="(gdPair, idx) in pubGoods" :key="idx" justify="around"
-        :class="idx !== pubGoods.length - 1 ? 'mb-20' : ''"
-      >
-        <at-flex-item :size="6" style="padding-right: 12rpx">
-          <good-card :good="gdPair[0]"/>
-        </at-flex-item>
-        <at-flex-item :size="6" style="padding-left: 12rpx">
-          <good-card v-if="gdPair[1]" :good="gdPair[1]"/>
-        </at-flex-item>
-      </at-flex>
+      <view v-if="!pubGoods.length" class="h-100 center-container">
+        <view class="text-center">
+          <at-icon value="folder" size="60" color="#6190E899"/>
+          <view style="color: #6190E899">No Goods</view>
+        </view>
+      </view>
+      <view v-else>
+        <at-flex v-for="(gdPair, idx) in pubGoods" :key="idx" justify="around"
+          :class="idx !== pubGoods.length - 1 ? 'mb-20' : ''"
+        >
+          <at-flex-item :size="6" style="padding-right: 12rpx">
+            <good-card :good="gdPair[0]"/>
+          </at-flex-item>
+          <at-flex-item :size="6" style="padding-left: 12rpx">
+            <good-card v-if="gdPair[1]" :good="gdPair[1]"/>
+          </at-flex-item>
+        </at-flex>
+      </view>
     </at-card>
   </basic-layout>
 </template>
@@ -43,6 +51,7 @@ import GoodCard from '../../components/GoodCard.vue'
 import BasicLayout from '../../components/BasicLayout.vue'
 import { useStore } from 'vuex'
 import { Good } from 'src/commons'
+import Taro from '@tarojs/taro'
 
 export default defineComponent({
   name: 'my',
@@ -59,31 +68,31 @@ export default defineComponent({
     const pubGoods = ref([] as Good[][])
     const orders = [{
       iconInfo: {
-        size: 30,
+        size: 40,
         value: 'folder'
       },
       value: 'Pay'
     }, {
       iconInfo: {
-        size: 30,
+        size: 40,
         value: 'folder'
       },
       value: 'Deliver'
     }, {
       iconInfo: {
-        size: 30,
+        size: 40,
         value: 'folder'
       },
       value: 'Receive'
     }, {
       iconInfo: {
-        size: 30,
+        size: 40,
         value: 'folder'
       },
       value: 'Comment'
     }, {
       iconInfo: {
-        size: 30,
+        size: 40,
         value: 'folder'
       },
       value: 'Refund'
@@ -91,6 +100,7 @@ export default defineComponent({
 
     async function refresh () {
       let goods = await getGoodsByOwner(account.value._index)
+      pubGoods.value = []
       for (let i = 0; i < goods.length; i += 2) {
         const item = [goods[i]]
         if (i !== goods.length - 1) {
@@ -99,8 +109,15 @@ export default defineComponent({
         pubGoods.value.push(item)
       }
     }
-    function onOrderClicked (item: object, index: number) {
-      console.log(item, index)
+    function onOrderClicked (item: any, index: number) {
+      if (!index && item.mpEvent && item.mpEvent.target) {
+        const ele = document.getElementById(item.mpEvent.target.id)
+        if (ele?.textContent === 'more') {
+          Taro.navigateTo({ url: '../orderList/orderList' })
+        }
+      } else {
+        console.log(item, index)
+      }
     }
     return {
       account,

@@ -1,11 +1,8 @@
 <template>
-  <scs-result title="Order Succeed!" content="Your good now display in the home page.">
-    <at-flex>
-      <at-flex-item :size="6" class="mr-5">
-        <at-button type="primary" @click="onToDetailClicked">View Detail</at-button>
-      </at-flex-item>
-      <at-flex-item :size="6" class="ml-5">
-        <at-button @click="onAddAgainClicked">Add Again</at-button>
+  <scs-result title="Order Succeed!" content="Your order has been generated. we will notice owner to send good immediately. please pay attention to order's delivery information.">
+    <at-flex align="center" class="mt-50">
+      <at-flex-item :offset="3" :size="6" class="mr-5">
+        <at-button type="primary" @click="onToDetailClicked">View Order</at-button>
       </at-flex-item>
     </at-flex>
     <at-fab style="position: fixed; right: 50rpx; bottom: 50rpx" :onClick="onToHomeClicked">
@@ -27,22 +24,16 @@ export default defineComponent({
     function onToDetailClicked () {
       const queryParams = Taro.getCurrentInstance().router?.params || {}
       Taro.navigateTo({
-        url: `../../pages/goodDtl/goodDtl?gid=${queryParams.gid}`
-      })
-    }
-    function onAddAgainClicked () {
-      Taro.navigateTo({
-        url: '../../pages/addGood/addGood'
+        url: `../orderDtl/orderDtl?gid=${queryParams.oid}`
       })
     }
     function onToHomeClicked () {
       Taro.switchTab({
-        url: '../../pages/index/index'
+        url: '../index/index'
       })
     }
     return {
       onToDetailClicked,
-      onAddAgainClicked,
       onToHomeClicked
     }
   }

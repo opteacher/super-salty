@@ -31,8 +31,12 @@
         </view>
         <at-flex align="center" justify="around">
           <at-flex-item :size="6">
-            <at-list-item class="owner" :thumb="good.owner.avatar"
-              :title="good.owner.username || good.owner.phone"/>
+            <at-list-item
+              class="owner"
+              v-if="good.owner"
+              :thumb="good.owner.avatar"
+              :title="good.owner.account"
+            />
           </at-flex-item>
           <at-flex-item :size="6">
             <view class="at-article__info text-right">
@@ -80,7 +84,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, ref } from 'vue'
+import { computed, defineComponent, reactive } from 'vue'
 import BasicLayout from '../../components/BasicLayout.vue'
 import Taro from '@tarojs/taro'
 import { copyGood, newGood } from '../../commons'
@@ -93,29 +97,35 @@ export default defineComponent({
     BasicLayout
   },
   onShow () {
-    this.refresh()
+    this.init()
   },
   setup() {
     const store = useStore()
-    const good = ref(newGood())
+    const good = reactive(newGood())
     const queryParams = Taro.getCurrentInstance().router?.params || {}
     const lgnUsrIdx = store.getters.loginedUser._index
-    const isOwner = computed(() => good.value.owner._index === lgnUsrIdx)
+    const isOwner = computed(() => {
+      if (typeof good.owner === 'string') {
+        return good.owner === lgnUsrIdx
+      } else {
+        return good.owner._index === lgnUsrIdx
+      }
+    })
 
-    async function refresh () {
+    async function init () {
       if (queryParams.gid) {
-        good.value = await getIdenGood(queryParams.gid)
+        await getIdenGood(queryParams.gid, good)
       }
       if (queryParams.good) {
-        good.value = copyGood(JSON.parse(queryParams.good))
+        copyGood(JSON.parse(queryParams.good), good)
       }
-      if (!good.value._index) {
+      if (!good._index) {
         Taro.navigateBack({ delta: 1 })
       }
     }
     function onToChatClicked () {
       Taro.navigateTo({
-        url: `../../pages/chatRoom/chatRoom?gid=${queryParams.gid}&bid=${lgnUsrIdx}`
+        url: `../chatRoom/chatRoom?gid=${queryParams.gid}&bid=${lgnUsrIdx}`
       })
     }
     function onToEditClicked () {
@@ -126,7 +136,7 @@ export default defineComponent({
       isOwner,
       review: queryParams.review,
 
-      refresh,
+      init,
       onToChatClicked,
       onToEditClicked
     }

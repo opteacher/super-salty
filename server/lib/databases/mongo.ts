@@ -209,7 +209,11 @@ export default class Mongo implements com.DataBase {
     if (limit) {
       res = res.limit(Number.parseInt(limit))
     }
-    if (options.ext) {
+    if (Array.isArray(options.ext) && options.ext.length > 0) {
+      for (const prop of options.ext) {
+        res = res.populate(prop)
+      }
+    } else if (options.ext) {
       for (const prop of this.getRefCollection(mdlInf)) {
         res = res.populate(prop)
       }

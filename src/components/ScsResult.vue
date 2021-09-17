@@ -1,6 +1,6 @@
 <template>
   <view style="position: fixed; top: 0; bottom: 0; left: 0; right: 0">
-    <view class="center-container" style="height: 90vh">
+    <view class="center-container" style="height: 90vh; margin-top: -10vh">
       <view class="text-center">
         <at-icon value="check-circle" size="100" color="#13CE66"/>
         <view class="result-title at-article__h1">{{title}}</view>

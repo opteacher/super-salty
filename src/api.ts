@@ -1,7 +1,9 @@
 import { callBackend, copyGood, copyMessage, copyOrder, copyUser, Good, Message, Order, User } from './commons'
 
-export async function getIdenGood (goodId: string): Promise<Good> {
-  return callBackend(`/super-salty/mdl/v1/good/${goodId}`, 'GET').then(copyGood)
+export async function getIdenGood (goodId: string, output: Good): Promise<Good> {
+  return callBackend(`/super-salty/mdl/v1/good/${goodId}`, 'GET').then(res => {
+    return output ? copyGood(res, output) : copyGood(res)
+  })
 }
 
 export function getAllGoods (): Promise<any> {
@@ -10,7 +12,7 @@ export function getAllGoods (): Promise<any> {
 
 export function getGoodsByOwner (uid: string): Promise<Good[]> {
   return callBackend('/super-salty/mdl/v1/goods', 'GET', { owner: uid })
-    .then(ress => ress.map(copyGood))
+    .then(ress => ress.map(res => copyGood(res)))
 }
 
 export function addNewGood (form: any): Promise<any> {
@@ -21,15 +23,26 @@ export function genNewOrder (form: any): Promise<any> {
   return callBackend('/super-salty/mdl/v1/order', 'POST', form)
 }
 
-export function getOrder (index: string): Promise<Order> {
-  return callBackend(`/super-salty/mdl/v1/order/${index}`, 'GET').then(copyOrder)
+export function getOrder (index: string, output?: Order): Promise<Order> {
+  return callBackend(`/super-salty/mdl/v1/order/${index}`, 'GET').then(res => {
+    return output ? copyOrder(res, output) : copyOrder(res)
+  })
+}
+
+export function updateOrder (index: string, form: any): Promise<any> {
+  return callBackend(`/super-salty/mdl/v1/order/${index}`, 'PUT', form)
+}
+
+export function getOrdersByUser (uid: string): Promise<Order[]> {
+  return callBackend(`/super-salty/api/v1/user/${uid}/orders`, 'GET')
+    .then(ress => ress.map(res => copyOrder(res)))
 }
 
 export function getAllMessages (topic: string): Promise<Message[]> {
   return callBackend(`/super-salty/api/v1/message/topic/${topic}/s`, 'GET', {}, {
     showLoading: false, showTipText: false
   }).then(ress => ress
-    .map((res, idx) => Object.assign({ index: idx }, JSON.parse(res)))
+    .map((res, idx) => copyMessage(Object.assign({ index: idx }, JSON.parse(res))))
     .sort((m1, m2) => m1.createdAt > m2.createdAt ? 1 : -1)
   )
 }

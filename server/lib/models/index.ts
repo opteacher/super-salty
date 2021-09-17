@@ -127,7 +127,7 @@ export default async function (mdlsPath: string, dbCfgPath: string, mdlCfgPath: 
           router.put(PutUrl, async ctx => {
             ctx.body = {
               data: (await db.save(minfo,
-                ctx.request.body, { index: ctx.params.index }
+                ctx.request.body, { _index: ctx.params.index }
               ))[0]
             }
           })
@@ -142,7 +142,7 @@ export default async function (mdlsPath: string, dbCfgPath: string, mdlCfgPath: 
           router.delete(DelUrl, async ctx => {
             ctx.body = {
               data: await db.delete(minfo, {
-                index: ctx.params.index
+                _index: ctx.params.index
               })
             }
           })
@@ -170,7 +170,7 @@ export default async function (mdlsPath: string, dbCfgPath: string, mdlCfgPath: 
             const colNam = ary[0]
             const pamIdx = ary[1].slice(1)
             const preMdl = models[colNam]
-            const condition = { id: ctx.params[pamIdx] }
+            const condition = { _index: ctx.params[pamIdx] }
             ctx.body = {
               data: await db.save(preMdl, { [prop]: ctx.params.index }, condition, {
                 updMode: 'append'

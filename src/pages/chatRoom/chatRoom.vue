@@ -274,7 +274,7 @@ export default defineComponent({
         `unit=${good.value.unit}`,
       ].join('&')
       Taro.navigateTo({
-        url: `../../pages/offerPrice/offerPrice?${params}`
+        url: `../offerPrice/offerPrice?${params}`
       })
     }
     function onToolboxClicked () {
@@ -297,12 +297,16 @@ export default defineComponent({
           await setMessage(message.index as number, message)
         }
       }
-      console.log(await genNewOrder({
+      const order = await genNewOrder({
         price: finPrice,
         good: qryPam.gid,
         buyer: qryPam.bid,
         status: 'WaitForSend',
-      }))
+      })
+      console.log(order)
+      Taro.navigateTo({
+        url: '../genOrderScs/genOrderScs'
+      })
     }
     return {
       good,

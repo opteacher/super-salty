@@ -31,7 +31,8 @@ import {
   AtBadge,
   AtMessage,
   AtSkeleton,
-  AtSwitch
+  AtSwitch,
+  AtSteps
 } from 'taro-ui-vue3/lib'
 import 'taro-ui-vue3/dist/style/components/modal.scss'
 import 'taro-ui-vue3/dist/style/components/activity-indicator.scss'
@@ -60,6 +61,7 @@ import 'taro-ui-vue3/dist/style/components/article.scss'
 import 'taro-ui-vue3/dist/style/components/message.scss'
 import 'taro-ui-vue3/dist/style/components/skeleton.scss'
 import 'taro-ui-vue3/dist/style/components/switch.scss'
+import 'taro-ui-vue3/dist/style/components/steps.scss'
 import './app.scss'
 
 const App = createApp({
@@ -98,7 +100,8 @@ App.use(createUI({
   AtVirtualScroll,
   AtMessage,
   AtSkeleton,
-  AtSwitch
+  AtSwitch,
+  AtSteps
 }))
 
 export default App

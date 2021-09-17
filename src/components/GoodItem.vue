@@ -39,7 +39,7 @@ export default defineComponent({
   setup(props) {
     function onItemClicked () {
       Taro.navigateTo({
-        url: `../../pages/goodDtl/goodDtl?gid=${props.good._index}`
+        url: `../goodDtl/goodDtl?gid=${props.good._index}`
       })
     }
     return {
