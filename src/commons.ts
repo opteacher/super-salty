@@ -397,6 +397,7 @@ export function copyMessage (src: any, tgt?: Message): Message {
   } else {
     tgt.sender = src.sender
   }
+  tgt.index = src.index || -1
   tgt.topic = src.topic
   tgt.content = src.content
   tgt.createdAt = src.createdAt || new Date()

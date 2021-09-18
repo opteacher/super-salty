@@ -2,7 +2,7 @@
   <view>
     <at-flex class="good-item" hover-class="click-bkgd" @tap="onItemClicked">
       <at-flex-item class="good-logo" :size="1" is-auto>
-        <image class="ml-12" mode="center" :src="good.cover"/>
+        <image class="ml-12" mode="aspectFill" :src="good.cover"/>
       </at-flex-item>
       <at-flex-item style="overflow: hidden">
         <view class="at-article__h2 mt-0 good-name">{{good.name}}</view>

@@ -24,7 +24,7 @@ export default defineComponent({
     function onToDetailClicked () {
       const queryParams = Taro.getCurrentInstance().router?.params || {}
       Taro.navigateTo({
-        url: `../orderDtl/orderDtl?gid=${queryParams.oid}`
+        url: `../orderDtl/orderDtl?oid=${queryParams.oid}`
       })
     }
     function onToHomeClicked () {

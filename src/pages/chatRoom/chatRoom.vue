@@ -304,11 +304,11 @@ export default defineComponent({
         price: finPrice,
         good: qryPam.gid,
         buyer: qryPam.bid,
-        status: 'WaitForSend',
+        status: 'Pay',
       })
       console.log(order)
       Taro.navigateTo({
-        url: '../genOrderScs/genOrderScs'
+        url: `../genOrderScs/genOrderScs?oid=${order._index}`
       })
     }
     return {

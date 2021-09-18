@@ -81,6 +81,7 @@
       <at-button
         v-if="isWaitForPay"
         type="primary" :active="true"
+        @click="onPayClicked"
       >Pay</at-button>
       <at-button
         v-else-if="isWaitForSend"
@@ -174,10 +175,19 @@ export default defineComponent({
     const sendFormState = new FormState({
       delivery: { default: '', rule: { required: true } },
       status: { default: 'Sending' }
-    }, 'delivery')
+    })
 
     async function refresh () {
       await getOrder(orderId, order)
+    }
+    function onPayClicked () {
+      store.dispatch('showConfirm', {
+        content: 'Start some kind of payment logic',
+        confirmed: async () => {
+          await updateOrder(orderId, { status: 'Send'})
+          await refresh()
+        }
+      })
     }
     async function onSendSubmit () {
       const chkRes = sendFormState.validateForm()
@@ -214,6 +224,7 @@ export default defineComponent({
       sendFormState,
 
       refresh,
+      onPayClicked,
       onSendSubmit,
       onRecvClicked,
       onEvalClicked
