@@ -75,7 +75,14 @@
             <at-icon value="message" size="30"/>&nbsp;Chat now
           </at-button>
           <at-button v-else type="primary" @click="onToEditClicked">
-            <at-icon value="settings" size="30"/>&nbsp;Go To Edit
+            <at-flex align="center">
+              <at-flex-item :size="3">
+                <at-icon value="settings" size="25"/>
+              </at-flex-item>
+              <at-flex-item :size="1" is-auto>
+                <text class="ml-10">Go To Edit</text>
+              </at-flex-item>
+            </at-flex>
           </at-button>
         </at-flex-item>
       </at-flex>

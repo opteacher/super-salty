@@ -1,5 +1,5 @@
 <template>
-  <basic-layout class="container">
+  <basic-layout>
     <at-list>
       <msg-item
         v-for="(msgInf, index) in msgInfs"

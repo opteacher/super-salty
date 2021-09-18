@@ -46,7 +46,9 @@ const actions = {
     ))
   },
   async regup (ctx, form) {
-    await callBackend('/super-salty/api/v1/user/reg/up', 'POST', form)
+    await callBackend(
+      '/super-salty/api/v1/user/reg/up', 'POST', form
+    )
     return ctx.dispatch('login', form)
   },
   showConfirm (ctx, options: { content?: string, confirmed?: () => void }) {

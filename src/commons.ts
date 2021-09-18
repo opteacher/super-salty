@@ -182,19 +182,19 @@ export class FormState {
 
 export interface CallBkedOpns {
   showLoading?: boolean
-  showTipText?: boolean
+  succeedMsg?: string
 }
 
 export async function callBackend (
   path: string,
   method: keyof Taro.request.method | undefined,
   params: any = {},
-  options: CallBkedOpns = {
-    showLoading: true,
-    showTipText: true
-  },
-  succeedMsg: string = 'Request succeed!'
+  options?: CallBkedOpns
 ) {
+  options = Object.assign({
+    showLoading: true,
+    succeedMsg: ''
+  }, options || {})
   if (options.showLoading) {
     store.dispatch('showLoading', true)
   }
@@ -212,11 +212,9 @@ export async function callBackend (
     })
   } catch (err) {
     error.message = err.message || JSON.stringify(err)
-    if (options.showTipText) {
-      Taro.atMessage({
-        message: error.message, type: 'error'
-      })
-    }
+    Taro.atMessage({
+      message: error.message, type: 'error'
+    })
     return Promise.reject(error)
   } finally {
     if (options.showLoading) {
@@ -234,16 +232,14 @@ export async function callBackend (
     error = resp.data.error || resp.data
   }
   if (error.message.length) {
-    if (options.showTipText) {
-      Taro.atMessage({
-        message: error.message, type: 'error'
-      })
-    }
+    Taro.atMessage({
+      message: error.message, type: 'error'
+    })
     return Promise.reject(error)
   } else {
-    if (options.showTipText) {
+    if (options.succeedMsg) {
       Taro.atMessage({
-        message: succeedMsg, type: 'success'
+        message: options.succeedMsg, type: 'success'
       })
     }
     return Promise.resolve(resp.data.data || resp.data.result)

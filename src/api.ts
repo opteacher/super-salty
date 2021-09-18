@@ -1,13 +1,14 @@
 import { callBackend, copyGood, copyMessage, copyOrder, copyUser, Good, Message, Order, User } from './commons'
 
-export async function getIdenGood (goodId: string, output: Good): Promise<Good> {
+export async function getIdenGood (goodId: string, output?: Good): Promise<Good> {
   return callBackend(`/super-salty/mdl/v1/good/${goodId}`, 'GET').then(res => {
     return output ? copyGood(res, output) : copyGood(res)
   })
 }
 
-export function getAllGoods (): Promise<any> {
-  return callBackend(`/super-salty/mdl/v1/goods`, 'GET')
+export function getAllGoods (): Promise<Good[]> {
+  return callBackend('/super-salty/mdl/v1/goods', 'GET')
+    .then(ress => ress.map(res => copyGood(res)))
 }
 
 export function getGoodsByOwner (uid: string): Promise<Good[]> {
@@ -39,9 +40,10 @@ export function getOrdersByUser (uid: string): Promise<Order[]> {
 }
 
 export function getAllMessages (topic: string): Promise<Message[]> {
-  return callBackend(`/super-salty/api/v1/message/topic/${topic}/s`, 'GET', {}, {
-    showLoading: false, showTipText: false
-  }).then(ress => ress
+  return callBackend(
+    `/super-salty/api/v1/message/topic/${topic}/s`,
+    'GET', {}, { showLoading: false }
+  ).then(ress => ress
     .map((res, idx) => copyMessage(Object.assign({ index: idx }, JSON.parse(res))))
     .sort((m1, m2) => m1.createdAt > m2.createdAt ? 1 : -1)
   )

@@ -27,7 +27,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, Ref, ref } from 'vue'
+import { defineComponent, ref } from 'vue'
 import GoodItem from '../../components/GoodItem.vue'
 import Taro from '@tarojs/taro'
 import BasicLayout from '../../components/BasicLayout.vue'
@@ -41,11 +41,11 @@ export default defineComponent({
     BasicLayout
   },
   onShow () {
-    this.refresh ()
+    this.refresh()
   },
   setup () {
     const schWds = ref('')
-    const goods: Ref<Array<Good>> = ref([])
+    const goods = ref([] as Good[])
 
     async function refresh () {
       goods.value = await getAllGoods()
